@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { prisma } from '../server.js';
+import { prisma } from '../lib/prisma.js';
 import { generateToken } from '../utils/jwt.js';
 import { ApiError } from '../utils/errorHandler.js';
 
