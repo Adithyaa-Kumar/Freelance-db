@@ -147,42 +147,42 @@ api.interceptors.response.use(
 // Auth API
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<AuthResponse>('/api/auth/login', { email, password }),
+    api.post<AuthResponse>('/auth/login', { email, password }),
   signup: (email: string, password: string, name: string) =>
-    api.post<AuthResponse>('/api/auth/register', { email, password, name }),
+    api.post<AuthResponse>('/auth/register', { email, password, name }),
   logout: () => {
     localStorage.removeItem('authToken');
   },
-  getMe: () => api.get<User>('/api/auth/me'),
+  getMe: () => api.get<User>('/auth/me'),
 };
 
 // Projects API
 export const projectsApi = {
-  getAll: () => api.get<Project[]>('/api/projects'),
-  getById: (id: string) => api.get<Project>(`/api/projects/${id}`),
-  create: (data: Partial<Project>) => api.post<Project>('/api/projects', data),
+  getAll: () => api.get<Project[]>('/projects'),
+  getById: (id: string) => api.get<Project>(`/projects/${id}`),
+  create: (data: Partial<Project>) => api.post<Project>('/projects', data),
   update: (id: string, data: Partial<Project>) =>
-    api.put<Project>(`/api/projects/${id}`, data),
-  delete: (id: string) => api.delete(`/api/projects/${id}`),
+    api.put<Project>(`/projects/${id}`, data),
+  delete: (id: string) => api.delete(`/projects/${id}`),
 };
 
 // Tasks API
 export const tasksApi = {
   getByProject: (projectId: string) =>
-    api.get<Task[]>(`/api/projects/${projectId}/tasks`),
+    api.get<Task[]>(`/projects/${projectId}/tasks`),
   create: (projectId: string, data: Partial<Task>) =>
-    api.post<Task>(`/api/projects/${projectId}/tasks`, data),
+    api.post<Task>(`/projects/${projectId}/tasks`, data),
   update: (projectId: string, taskId: string, data: Partial<Task>) =>
-    api.put<Task>(`/api/projects/${projectId}/tasks/${taskId}`, data),
+    api.put<Task>(`/projects/${projectId}/tasks/${taskId}`, data),
   delete: (projectId: string, taskId: string) =>
-    api.delete(`/api/projects/${projectId}/tasks/${taskId}`),
+    api.delete(`/projects/${projectId}/tasks/${taskId}`),
 };
 
 // Users API
 export const usersApi = {
-  getProfile: () => api.get<User>('/api/users/profile'),
+  getProfile: () => api.get<User>('/users/profile'),
   updateProfile: (data: Partial<User>) =>
-    api.put<User>('/api/users/profile', data),
+    api.put<User>('/users/profile', data),
 };
 
 export default api;
