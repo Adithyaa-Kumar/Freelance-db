@@ -23,14 +23,14 @@ const getApiUrl = (): string => {
                        window.location.hostname === '127.0.0.1';
     
     if (isLocalhost) {
-      return 'http://localhost:5000';
+      return 'http://localhost:5000/api';
     }
     
     // Production: assume API is on same domain
-    return `${window.location.protocol}//${window.location.host}`;
+    return `${window.location.protocol}//${window.location.host}/api`;
   }
 
-  return 'http://localhost:5000';
+  return 'http://localhost:5000/api';
 };
 
 const API_BASE_URL = getApiUrl();
