@@ -1,0 +1,161 @@
+// Production-grade 3NF PostgreSQL database schema with Prisma ORM
+// Includes normalized data model, relationships, cascade deletes, and indexes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE AUTHENTICATION & IDENTITY
+// ============================================================================
+
+/// Users table - Core authentication and identity management
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  client        Client?
+  activityLogs  ActivityLog[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// ============================================================================
+// CLIENT MANAGEMENT
+// ============================================================================
+
+/// Clients table - Client/Company profiles (1:1 relationship with users)
+model Client {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  name          String
+  email         String
+  company       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Foreign keys
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relations
+  projects      Project[]
+
+  @@index([userId])
+  @@map("clients")
+}
+
+// ============================================================================
+// PROJECT MANAGEMENT
+// ============================================================================
+
+/// Projects table - Project management with budget and timeline tracking
+model Project {
+  id            String   @id @default(cuid())
+  clientId      String
+  name          String
+  description   String?
+  budget        Decimal
+  status        String   @default("ONGOING")
+  priority      String   @default("MEDIUM")
+  startDate     DateTime
+  endDate       DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Foreign keys
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Relations
+  payments      Payment[]
+  tasks         Task[]
+
+  @@index([clientId])
+  @@map("projects")
+}
+
+// ============================================================================
+// FINANCIAL TRACKING
+// ============================================================================
+
+/// Payments table - Invoice and payment tracking with status management
+model Payment {
+  id            String   @id @default(cuid())
+  projectId     String
+  amount        Decimal
+  currency      String   @default("USD")
+  invoiceNumber String   @unique
+  status        String   @default("PENDING")
+  dueDate       DateTime
+  paidDate      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Foreign keys
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@map("payments")
+}
+
+// ============================================================================
+// TASK MANAGEMENT
+// ============================================================================
+
+/// Tasks table - Task tracking with deadline management
+model Task {
+  id            String   @id @default(cuid())
+  projectId     String
+  title         String
+  status        String   @default("PENDING")
+  deadline      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Foreign keys
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+  @@map("tasks")
+}
+
+// ============================================================================
+// AUDIT & LOGGING
+// ============================================================================
+
+/// Activity Logs table - Audit trail for all user activities
+model ActivityLog {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String
+  timestamp     DateTime @default(now())
+  details       String?
+
+  // Foreign keys
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("activity_logs")
+}
+
+// ============================================================================
+// ENUMS - Type constraints for data integrity (Documentation only - SQLite uses strings)
+// ============================================================================
+// ProjectStatus: ONGOING, COMPLETED
+// Priority: LOW, MEDIUM, HIGH
+// PaymentStatus: PAID, PENDING, OVERDUE
+// TaskStatus: PENDING, IN_PROGRESS, COMPLETED, CANCELLED

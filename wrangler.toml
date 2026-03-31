@@ -1,0 +1,89 @@
+name = "freelanceflow-api"
+type = "javascript"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+workers_dev = true
+compatibility_date = "2024-01-01"
+main = "backend/src/worker.js"
+
+# Environment configuration
+[env.production]
+name = "freelanceflow-api-production"
+route = "https://api.freelanceflow.com/*"
+zone_id = "YOUR_CLOUDFLARE_ZONE_ID"
+
+[env.staging]
+name = "freelanceflow-api-staging"
+route = "https://api-staging.freelanceflow.com/*"
+zone_id = "YOUR_CLOUDFLARE_ZONE_ID"
+
+[env.development]
+name = "freelanceflow-api-dev"
+workers_dev = true
+
+# Production environment variables
+[[env.production.env_vars]]
+ENVIRONMENT = "production"
+CORS_ORIGIN = "https://freelanceflow.com"
+JWT_EXPIRE = "7d"
+
+# Staging environment variables
+[[env.staging.env_vars]]
+ENVIRONMENT = "staging"
+CORS_ORIGIN = "https://staging.freelanceflow.com"
+JWT_EXPIRE = "7d"
+
+# Development environment variables
+[[env.development.env_vars]]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:5173"
+JWT_EXPIRE = "7d"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "freelanceflow-production"
+database_id = "YOUR_DATABASE_ID"
+
+# Environment-specific D1 bindings
+[env.production.d1_databases]
+binding = "DB"
+database_name = "freelanceflow-production"
+database_id = "YOUR_PRODUCTION_DB_ID"
+
+[env.staging.d1_databases]
+binding = "DB"
+database_name = "freelanceflow-staging"
+database_id = "YOUR_STAGING_DB_ID"
+
+[env.development.d1_databases]
+binding = "DB"
+database_name = "freelanceflow-dev"
+database_id = "YOUR_DEV_DB_ID"
+
+# KV Namespace for caching (optional)
+[[kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_KV_NAMESPACE_ID"
+preview_id = "YOUR_KV_PREVIEW_ID"
+
+# Secrets - Set these in Cloudflare dashboard or via CLI:
+# wrangler secret put JWT_SECRET --env production
+# wrangler secret put DATABASE_URL --env production
+# wrangler secret put API_KEY --env production
+
+# Analytics
+[analytics]
+enabled = true
+
+# Limits
+limits = { cpu_ms = 50000 }
+
+# Build configuration
+[build]
+command = "cd backend && npm install"
+cwd = "./backend"
+watch_paths = ["src/**/*.js"]
+
+# Observability
+[observability]
+enabled = true

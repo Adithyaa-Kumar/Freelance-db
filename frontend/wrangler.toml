@@ -1,0 +1,33 @@
+# Cloudflare Pages Configuration
+# This file controls how the frontend is deployed to Cloudflare Pages
+
+[build]
+# The directory to publish
+publish = "dist"
+
+# Build command
+command = "npm run build"
+
+# Build environment
+environment = { NODE_VERSION = "18.17.0" }
+
+# Environment variables can be set per environment in Cloudflare dashboard
+# Or use the env sections below
+
+[env.production]
+publish = "dist"
+environment = { NODE_ENV = "production" }
+
+[env.staging]
+publish = "dist"
+environment = { NODE_ENV = "staging" }
+
+[env.development]
+publish = "dist"
+environment = { NODE_ENV = "development" }
+
+# Redirects for SPA routing
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200

@@ -1,0 +1,32 @@
+{
+  "name": "freelanceflow",
+  "version": "1.0.0",
+  "description": "Production-ready full-stack freelance project management application",
+  "private": true,
+  "scripts": {
+    "frontend:install": "cd frontend && npm install",
+    "backend:install": "cd backend && npm install",
+    "install:all": "npm run frontend:install && npm run backend:install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "db:migrate": "cd backend && npx prisma migrate dev",
+    "db:seed": "cd backend && npm run prisma:seed",
+    "db:studio": "cd backend && npm run prisma:studio",
+    "lint:frontend": "cd frontend && npm run lint",
+    "clean": "rm -rf frontend/node_modules backend/node_modules frontend/dist",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:frontend": "wrangler pages deploy frontend/dist --project-name freelanceflow",
+    "deploy:backend": "wrangler deploy --env production",
+    "deploy:staging": "wrangler deploy --env staging",
+    "verify": "bash scripts/deployment-check.sh",
+    "logs": "wrangler tail --env production",
+    "d1:init": "wrangler d1 execute freelanceflow-production --file database/d1-schema.sql",
+    "d1:list": "wrangler d1 list"
+  },
+  "keywords": ["freelance", "project-management", "full-stack", "react", "express"],
+  "author": "FreelanceFlow Team",
+  "license": "MIT"
+}

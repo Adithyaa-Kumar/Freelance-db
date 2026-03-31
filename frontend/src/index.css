@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200;
+  }
+}
+
+@layer components {
+  /* Primary button styles */
+  .btn-primary {
+    @apply px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg font-medium transition-colors duration-200;
+  }
+
+  /* Standard input */
+  .input-field {
+    @apply w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-600 transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* ===== GLASSMORPHISM COMPONENTS ===== */
+  
+  /* Glass card - frosted glass effect */
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 shadow-2xl;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Glass input - frosted input with cyan glow on focus */
+  .glass-input {
+    @apply w-full px-4 py-3 rounded-lg text-white placeholder-slate-400;
+    background: rgba(71, 85, 105, 0.2);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .glass-input:focus {
+    @apply outline-none text-white;
+    background: rgba(71, 85, 105, 0.3);
+    border-color: rgba(34, 211, 238, 0.5);
+    box-shadow: 
+      0 0 20px rgba(34, 211, 238, 0.4),
+      inset 0 0 10px rgba(34, 211, 238, 0.1);
+  }
+
+  .glass-input:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Glass button - with glow and scale on hover */
+  .glass-button {
+    @apply px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300;
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    backdrop-filter: blur(10px);
+  }
+
+  .glass-button:hover:not(:disabled) {
+    @apply scale-105;
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%);
+    border-color: rgba(34, 211, 238, 0.6);
+    box-shadow: 
+      0 0 30px rgba(34, 211, 238, 0.5),
+      inset 0 0 15px rgba(34, 211, 238, 0.1);
+  }
+
+  /* Glass alert error */
+  .glass-alert-error {
+    @apply rounded-lg p-4;
+    background: rgba(220, 38, 38, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Glass alert success */
+  .glass-alert-success {
+    @apply rounded-lg p-4;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Utility for loading spinner glass */
+  .glass-spinner {
+    @apply w-8 h-8 border-4 border-cyan-200 border-t-cyan-400 rounded-full animate-spin;
+  }
+}
+
+/* Smooth hover animations */
+@layer utilities {
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-lg;
+  }
+
+  .focus-glow {
+    @apply focus:outline-none focus:shadow-lg;
+  }
+
+  /* Dashboard specific animations */
+  .animate-in {
+    animation: slideInUp 0.3s ease-out;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .slide-in-from-top-2 {
+    animation: slideInFromTop 0.3s ease-out;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
