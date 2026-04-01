@@ -11,6 +11,9 @@ export const StatCard = ({
     green: 'from-green-500/20 to-green-500/5 border-green-500/30 hover:border-green-400/50 hover:shadow-lg hover:shadow-green-500/20',
     red: 'from-red-500/20 to-red-500/5 border-red-500/30 hover:border-red-400/50 hover:shadow-lg hover:shadow-red-500/20',
     orange: 'from-orange-500/20 to-orange-500/5 border-orange-500/30 hover:border-orange-400/50 hover:shadow-lg hover:shadow-orange-500/20',
+    blue: 'from-blue-500/20 to-blue-500/5 border-blue-500/30 hover:border-blue-400/50 hover:shadow-lg hover:shadow-blue-500/20',
+    yellow: 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-500/20',
+    indigo: 'from-indigo-500/20 to-indigo-500/5 border-indigo-500/30 hover:border-indigo-400/50 hover:shadow-lg hover:shadow-indigo-500/20',
   };
 
   const textClasses = {
@@ -19,6 +22,9 @@ export const StatCard = ({
     green: 'text-green-400',
     red: 'text-red-400',
     orange: 'text-orange-400',
+    blue: 'text-blue-400',
+    yellow: 'text-yellow-400',
+    indigo: 'text-indigo-400',
   };
 
   const trendClasses = {

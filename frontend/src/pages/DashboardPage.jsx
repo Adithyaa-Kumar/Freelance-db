@@ -18,6 +18,7 @@ import { StatCard } from '@components/StatCard.jsx';
 import { ChartCard } from '@components/ChartCard.jsx';
 import { DataTable } from '@components/DataTable.jsx';
 import { SQLViewer } from '@components/SQLViewer.jsx';
+import ImportDataButton from '@components/ImportDataButton.jsx';
 
 export const DashboardPage = () => {
   const { user } = useAuthStore();
@@ -133,13 +134,16 @@ WHERE pay.status = 'PAID';`,
 
   return (
     <div className="space-y-6 relative z-10">
-      <div>
-        <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-          <span>📊</span> Dashboard
-        </h1>
-        <p className="text-slate-400">
-          Welcome back, <span className="text-cyan-400 font-semibold">{user?.email?.split('@')[0]}</span>! 👋
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
+            <span>📊</span> Dashboard
+          </h1>
+          <p className="text-slate-400">
+            Welcome back, <span className="text-cyan-400 font-semibold">{user?.email?.split('@')[0]}</span>! 👋
+          </p>
+        </div>
+        <ImportDataButton className="ml-4" />
       </div>
 
       {error && (

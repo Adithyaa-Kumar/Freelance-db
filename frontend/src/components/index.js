@@ -5,3 +5,6 @@ export { StatCard } from './StatCard.jsx';
 export { ChartCard } from './ChartCard.jsx';
 export { DataTable } from './DataTable.jsx';
 export { SQLViewer } from './SQLViewer.jsx';
+export { default as SmartDataExplorer } from './SmartDataExplorer.jsx';
+export { default as SmartDataTable } from './SmartDataTable.jsx';
+export { default as FilterPanel } from './FilterPanel.jsx';

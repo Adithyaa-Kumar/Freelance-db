@@ -66,8 +66,8 @@ model Project {
   name          String
   description   String?
   budget        Decimal
-  status        String   @default("ONGOING")
-  priority      String   @default("MEDIUM")
+  status        ProjectStatus @default(ONGOING)
+  priority      Priority @default(MEDIUM)
   startDate     DateTime
   endDate       DateTime?
   createdAt     DateTime @default(now())
@@ -92,14 +92,14 @@ model Project {
 model Payment {
   id            String   @id @default(cuid())
   projectId     String
-  amount        Decimal
-  currency      String   @default("USD")
-  invoiceNumber String   @unique
-  status        String   @default("PENDING")
-  dueDate       DateTime
-  paidDate      DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  amount        Decimal  @db.Decimal(12, 2)
+  currency      String   @default("USD") @db.VarChar(3)
+  invoiceNumber String   @unique @db.VarChar(255)
+  status        PaymentStatus @default(PENDING)
+  dueDate       DateTime @db.Timestamp(3)
+  paidDate      DateTime? @db.Timestamp(3)
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @updatedAt @db.Timestamp(3)
 
   // Foreign keys
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -118,11 +118,11 @@ model Payment {
 model Task {
   id            String   @id @default(cuid())
   projectId     String
-  title         String
-  status        String   @default("PENDING")
-  deadline      DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  title         String   @db.VarChar(255)
+  status        TaskStatus @default(PENDING)
+  deadline      DateTime? @db.Timestamp(3)
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @updatedAt @db.Timestamp(3)
 
   // Foreign keys
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -140,9 +140,9 @@ model Task {
 model ActivityLog {
   id            String   @id @default(cuid())
   userId        String
-  action        String
-  timestamp     DateTime @default(now())
-  details       String?
+  action        String   @db.VarChar(255)
+  timestamp     DateTime @default(now()) @db.Timestamp(3)
+  details       String?  @db.Text
 
   // Foreign keys
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -153,9 +153,37 @@ model ActivityLog {
 }
 
 // ============================================================================
-// ENUMS - Type constraints for data integrity (Documentation only - SQLite uses strings)
+// ENUMS - Type constraints for data integrity
 // ============================================================================
-// ProjectStatus: ONGOING, COMPLETED
-// Priority: LOW, MEDIUM, HIGH
-// PaymentStatus: PAID, PENDING, OVERDUE
-// TaskStatus: PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+
+enum ProjectStatus {
+  ONGOING
+  COMPLETED
+
+  @@map("project_status")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("priority")
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+
+  @@map("payment_status")
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@map("task_status")
+}

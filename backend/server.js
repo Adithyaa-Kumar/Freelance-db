@@ -10,9 +10,9 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
+import dataRoutes from './routes/dataRoutes.js';
+import seedRoutes from './routes/seedRoutes.js';
 
-// Initialize Prisma Client
-export const prisma = new PrismaClient();
 
 // Initialize Express
 const app = express();
@@ -40,6 +40,8 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/data', dataRoutes);
+app.use('/api/seed', seedRoutes);
 
 // 404 handler
 app.use((req, res) => {

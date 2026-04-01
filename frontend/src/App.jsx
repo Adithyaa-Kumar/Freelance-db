@@ -5,6 +5,11 @@ import { BaseLayout } from '@layouts/BaseLayout.jsx';
 import { LoginPage } from '@pages/LoginPage.jsx';
 import { SignupPage } from '@pages/SignupPage.jsx';
 import { DashboardPage } from '@pages/DashboardPage.jsx';
+import { ClientsPage } from '@pages/ClientsPage.jsx';
+import { ProjectsPage } from '@pages/ProjectsPage.jsx';
+import { TasksPage } from '@pages/TasksPage.jsx';
+import { AnalyticsPage } from '@pages/AnalyticsPage.jsx';
+import { PaymentsPage } from '@pages/PaymentsPage.jsx';
 import '@/index.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -45,6 +50,56 @@ function App() {
             <ProtectedRoute>
               <BaseLayout>
                 <DashboardPage />
+              </BaseLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/clients"
+          element={
+            <ProtectedRoute>
+              <BaseLayout>
+                <ClientsPage />
+              </BaseLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <BaseLayout>
+                <ProjectsPage />
+              </BaseLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <BaseLayout>
+                <TasksPage />
+              </BaseLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <BaseLayout>
+                <AnalyticsPage />
+              </BaseLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments"
+          element={
+            <ProtectedRoute>
+              <BaseLayout>
+                <PaymentsPage />
               </BaseLayout>
             </ProtectedRoute>
           }

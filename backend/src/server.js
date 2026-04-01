@@ -5,11 +5,15 @@ import { PrismaClient } from '@prisma/client';
 import { errorMiddleware } from './middleware/auth.js';
 import authRoutes from './routes/authRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
-import healthRoutes from './routes/healthRoutes.js';
+import clientRoutes from './routes/clientRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
+import dataRoutes from './routes/dataRoutes.js';
 
-// Initialize Prisma Client
-export const prisma = new PrismaClient();
+// Initialize Prisma
+const prisma = new PrismaClient();
 
 // Initialize Express
 const app = express();
@@ -32,8 +36,12 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/tasks', taskRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/data', dataRoutes);
 
 // 404 handler
 app.use((req, res) => {
