@@ -10,7 +10,13 @@ export default defineConfig(({ command, mode }) => {
   const isProd = mode === 'production';
 
   return {
-    plugins: [react()],
+    plugins: [
+      react({
+        fastRefresh: isDev,
+        // Disable performance monitoring to prevent mgt.clearMarks error
+        jsxImportSource: 'react',
+      })
+    ],
     define: {
       __APP_ENV__: JSON.stringify(mode),
     },
