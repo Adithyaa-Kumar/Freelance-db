@@ -1,9 +1,7 @@
 // Seed Controller - Handle data seeding and import operations
 
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
+import bcrypt from 'bcrypt';
 
 /**
  * POST /api/seed/import

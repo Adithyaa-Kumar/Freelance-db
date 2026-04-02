@@ -1,9 +1,7 @@
 // Smart Query Builder - Dynamically constructs optimized SQL queries
 // Hides JOIN, GROUP BY, SUBQUERY complexity behind a clean parameter interface
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 /**
  * Query parameters structure:

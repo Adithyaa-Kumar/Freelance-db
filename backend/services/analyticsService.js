@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js';
+import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/errorHandler.js';
 
 /**

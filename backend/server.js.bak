@@ -13,8 +13,8 @@ import healthRoutes from './routes/healthRoutes.js';
 import dataRoutes from './routes/dataRoutes.js';
 import seedRoutes from './routes/seedRoutes.js';
 
-
-// Initialize Express
+// Initialize Prisma and Express
+export const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 5000;
 

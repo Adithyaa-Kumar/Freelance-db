@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import useDataFetcher from '@hooks/useDataFetcher.js';
 import { QueryStateManager } from '@utils/queryStateManager.js';
 import SmartDataTable from './SmartDataTable.jsx';
@@ -7,12 +7,14 @@ import FilterPanel from './FilterPanel.jsx';
 /**
  * SmartDataExplorer - Main component for smart data exploration
  * Connects UI state management with dynamic SQL queries
+ * OPTIMIZED: Prevents flickering with proper memoization and dependency tracking
  */
 const SmartDataExplorer = ({ entity = 'projects' }) => {
   const { data, loading, error, schema, insights, fetchData, fetchInsights } = useDataFetcher(entity);
   const [queryState, setQueryState] = useState(new QueryStateManager({ entity }));
   const [showTechDetails, setShowTechDetails] = useState(false);
-  const initializedRef = useRef(false); // Prevent duplicate initialization
+  const initializedRef = useRef(false);
+  const previousStateStringRef = useRef(''); // Track actual state changes
 
   // Initialize on mount - ONLY ONCE per entity change
   useEffect(() => {
@@ -21,14 +23,19 @@ const SmartDataExplorer = ({ entity = 'projects' }) => {
     initializedRef.current = true;
     setQueryState(new QueryStateManager({ entity }));
     fetchInsights(entity);
-    // Don't fetch data here - let the state change trigger it
-  }, [entity]); // Only depend on entity
+  }, [entity, fetchInsights]);
 
-  // Execute query whenever state changes
+  // Execute query whenever query state actually changes
+  // Use JSON string comparison to detect real changes
   useEffect(() => {
     const currentState = queryState.getState();
-    fetchData(currentState);
-  }, [queryState.getState()]); // This will cause updates when state changes
+    const currentStateString = JSON.stringify(currentState);
+    
+    if (previousStateStringRef.current !== currentStateString) {
+      previousStateStringRef.current = currentStateString;
+      fetchData(currentState);
+    }
+  }, [queryState, fetchData]); // Safe dependency
 
   const handleFilterChange = (filters) => {
     setQueryState((prev) => {
@@ -70,7 +77,7 @@ const SmartDataExplorer = ({ entity = 'projects' }) => {
     });
   };
 
-  const currentState = queryState.getState();
+  const currentState = useMemo(() => queryState.getState(), [queryState]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

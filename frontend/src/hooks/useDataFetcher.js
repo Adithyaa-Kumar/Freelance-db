@@ -1,9 +1,13 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAuthStore } from './useStore.js';
 
 /**
  * useDataFetcher - Custom hook for smart data exploration
- * Handles API calls with debouncing, loading states, and error handling
+ * Prevents flickering by:
+ * - Fetching schema only once
+ * - Using useCallback to memoize fetch functions
+ * - Proper dependency arrays to prevent infinite loops
+ * - Debouncing API calls
  */
 export const useDataFetcher = (initialEntity = 'projects') => {
   const [data, setData] = useState(null);
@@ -14,13 +18,14 @@ export const useDataFetcher = (initialEntity = 'projects') => {
 
   const { token } = useAuthStore();
   const debounceTimerRef = useRef(null);
-  const schemaFetchedRef = useRef(false); // Prevent duplicate schema fetches
+  const schemaFetchedRef = useRef(false);
+  const previousEntityRef = useRef(initialEntity);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-  // Fetch schema once on mount
+  // Fetch schema only once when token changes
   useEffect(() => {
-    if (schemaFetchedRef.current || !token) return;
-    
+    if (!token || schemaFetchedRef.current) return;
+
     schemaFetchedRef.current = true;
     
     const fetchSchema = async () => {
@@ -34,15 +39,16 @@ export const useDataFetcher = (initialEntity = 'projects') => {
         setSchema(result.schema);
       } catch (err) {
         console.error('Schema fetch error:', err);
+        setError('Failed to load schema');
       }
     };
 
     fetchSchema();
-  }, []); // Empty dependency array - fetch only once
+  }, [token, API_URL]); // Only depend on token changes
 
   /**
-   * Execute query with smart SQL generation
-   * Debounced to prevent excessive API calls
+   * Fetch data with debouncing
+   * Memoized to prevent unnecessary re-renders
    */
   const fetchData = useCallback(
     (queryParams) => {
@@ -51,7 +57,12 @@ export const useDataFetcher = (initialEntity = 'projects') => {
         clearTimeout(debounceTimerRef.current);
       }
 
-      // Set debounce timer
+      if (!token) {
+        setError('No authentication token');
+        return;
+      }
+
+      // Set debounce timer (300ms delay)
       debounceTimerRef.current = setTimeout(async () => {
         try {
           setLoading(true);
@@ -73,11 +84,70 @@ export const useDataFetcher = (initialEntity = 'projects') => {
 
           const result = await response.json();
           setData(result.data);
+          setError(null);
         } catch (err) {
           setError(err.message);
           console.error('Data fetch error:', err);
+          setData(null);
         } finally {
           setLoading(false);
+        }
+      }, 300); // 300ms debounce
+    },
+    [token, API_URL]
+  );
+
+  /**
+   * Fetch insights for entity
+   * Memoized to prevent unnecessary re-renders
+   */
+  const fetchInsights = useCallback(
+    async (entity) => {
+      if (!token) return;
+
+      try {
+        const response = await fetch(
+          `${API_URL}/data/insights?entity=${entity}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (!response.ok) throw new Error('Failed to fetch insights');
+        const result = await response.json();
+        setInsights(result.insights);
+      } catch (err) {
+        console.error('Insights fetch error:', err);
+        setInsights(null);
+      }
+    },
+    [token, API_URL]
+  );
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  return useMemo(
+    () => ({
+      data,
+      loading,
+      error,
+      schema,
+      insights,
+      fetchData,
+      fetchInsights,
+    }),
+    [data, loading, error, schema, insights, fetchData, fetchInsights]
+  );
+};
+
+export default useDataFetcher;
         }
       }, 500); // 500ms debounce
     },

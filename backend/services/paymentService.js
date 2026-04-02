@@ -1,4 +1,4 @@
-import { prisma } from '../server.js';
+import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/errorHandler.js';
 
 export const paymentService = {
