@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { prisma } from '../lib/prisma.js';
-import { errorMiddleware } from '../middleware/auth.js';
+import { errorMiddleware, authMiddleware } from '../middleware/auth.js';
 import authRoutes from '../routes/authRoutes.js';
 import projectRoutes from '../routes/projectRoutes.js';
 import clientRoutes from '../routes/clientRoutes.js';

@@ -19,7 +19,6 @@ export const useDataFetcher = (initialEntity = 'projects') => {
   const { token } = useAuthStore();
   const debounceTimerRef = useRef(null);
   const schemaFetchedRef = useRef(false);
-  const previousEntityRef = useRef(initialEntity);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   // Fetch schema only once when token changes
@@ -44,7 +43,7 @@ export const useDataFetcher = (initialEntity = 'projects') => {
     };
 
     fetchSchema();
-  }, [token, API_URL]); // Only depend on token changes
+  }, [token, API_URL]);
 
   /**
    * Fetch data with debouncing
@@ -92,7 +91,7 @@ export const useDataFetcher = (initialEntity = 'projects') => {
         } finally {
           setLoading(false);
         }
-      }, 300); // 300ms debounce
+      }, 300);
     },
     [token, API_URL]
   );
@@ -124,56 +123,6 @@ export const useDataFetcher = (initialEntity = 'projects') => {
     [token, API_URL]
   );
 
-  // Clean up debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
-
-  return useMemo(
-    () => ({
-      data,
-      loading,
-      error,
-      schema,
-      insights,
-      fetchData,
-      fetchInsights,
-    }),
-    [data, loading, error, schema, insights, fetchData, fetchInsights]
-  );
-};
-
-export default useDataFetcher;
-        }
-      }, 500); // 500ms debounce
-    },
-    [token]
-  );
-
-  /**
-   * Fetch insights for specific entity
-   */
-  const fetchInsights = useCallback(
-    async (entity) => {
-      try {
-        const response = await fetch(`${API_URL}/data/insights/${entity}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) throw new Error('Failed to fetch insights');
-        const result = await response.json();
-        setInsights(result.insights);
-      } catch (err) {
-        console.error('Insights fetch error:', err);
-      }
-    },
-    [token]
-  );
-
   /**
    * Save favorite query
    */
@@ -196,10 +145,10 @@ export default useDataFetcher;
         throw err;
       }
     },
-    [token]
+    [token, API_URL]
   );
 
-  // Cleanup
+  // Clean up debounce timer on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
@@ -208,16 +157,19 @@ export default useDataFetcher;
     };
   }, []);
 
-  return {
-    data,
-    loading,
-    error,
-    schema,
-    insights,
-    fetchData,
-    fetchInsights,
-    saveFavorite,
-  };
+  return useMemo(
+    () => ({
+      data,
+      loading,
+      error,
+      schema,
+      insights,
+      fetchData,
+      fetchInsights,
+      saveFavorite,
+    }),
+    [data, loading, error, schema, insights, fetchData, fetchInsights, saveFavorite]
+  );
 };
 
 export default useDataFetcher;
