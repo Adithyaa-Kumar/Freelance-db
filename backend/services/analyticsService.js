@@ -2,7 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { ApiError } from '../utils/errorHandler.js';
 
 /**
- * Analytics Service with advanced DBMS patterns
+ * Analytics Service with SQLite-compatible queries
  * - Complex JOINs across 3-4 tables
  * - AGGREGATION with GROUP BY and calculations
  * - SUBQUERY patterns for filtering
@@ -23,16 +23,45 @@ export const analyticsService = {
     }
 
     try {
-      // Calculate revenue by month (AGGREGATION with GROUP BY)
-      const monthlyData = await prisma.payment.groupBy({
+      // Get user's client IDs
+      const userClients = await prisma.client.findMany({
+        where: { userId },
+        select: { id: true },
+      });
+      const clientIds = userClients.map(c => c.id);
+
+      if (clientIds.length === 0) {
+        return {
+          summary: {
+            totalRevenue: 0,
+            statusBreakdown: {
+              PAID: { count: 0, total: 0, average: 0 },
+              PENDING: { count: 0, total: 0, average: 0 },
+              OVERDUE: { count: 0, total: 0, average: 0 },
+            },
+          },
+          monthlyBreakdown: [],
+          period: { months },
+        };
+      }
+
+      // Calculate total revenue (paid only)
+      const totalRevenue = await prisma.payment.aggregate({
+        where: {
+          status: 'PAID',
+          project: {
+            clientId: { in: clientIds },
+          },
+        },
+        _sum: { amount: true },
+      });
+
+      // Get status breakdown
+      const statusBreakdown = await prisma.payment.groupBy({
         by: ['status'],
         where: {
           project: {
-            clientId: {
-              in: await prisma.client
-                .findMany({ where: { userId }, select: { id: true } })
-                .then(clients => clients.map(c => c.id)),
-            },
+            clientId: { in: clientIds },
           },
           createdAt: {
             gte: new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000),
@@ -43,58 +72,51 @@ export const analyticsService = {
         _avg: { amount: true },
       });
 
-      // Calculate total revenue across all time for this user
-      const totalRevenue = await prisma.payment.aggregate({
-        where: {
-          project: {
-            clientId: {
-              in: await prisma.client
-                .findMany({ where: { userId }, select: { id: true } })
-                .then(clients => clients.map(c => c.id)),
-            },
-          },
-          status: 'PAID',
-        },
-        _sum: { amount: true },
-      });
-
-      // Get monthly breakdown (COMPLEX AGGREGATION)
+      // Get monthly breakdown (SQLite compatible)
+      const cutoffDate = new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000).toISOString();
+      
       const monthlyBreakdown = await prisma.$queryRaw`
         SELECT 
-          DATE_TRUNC('month', p."createdAt") as month,
+          strftime('%Y-%m', p.createdAt) as month,
           COUNT(*) as count,
           SUM(CASE WHEN p.status = 'PAID' THEN p.amount ELSE 0 END) as paid_amount,
           SUM(CASE WHEN p.status = 'PENDING' THEN p.amount ELSE 0 END) as pending_amount,
+          SUM(CASE WHEN p.status = 'OVERDUE' THEN p.amount ELSE 0 END) as overdue_amount,
           AVG(p.amount) as avg_amount
-        FROM "Payment" p
-        INNER JOIN "Project" proj ON p."projectId" = proj.id
-        INNER JOIN "Client" c ON proj."clientId" = c.id
-        WHERE c."userId" = ${userId}
-        AND p."createdAt" >= NOW() - INTERVAL '${months} months'
-        GROUP BY DATE_TRUNC('month', p."createdAt")
+        FROM Payment p
+        INNER JOIN Project proj ON p.projectId = proj.id
+        INNER JOIN Client c ON proj.clientId = c.id
+        WHERE c.userId = ${userId}
+        AND p.createdAt >= ${cutoffDate}
+        GROUP BY strftime('%Y-%m', p.createdAt)
         ORDER BY month DESC
       `;
 
       return {
         summary: {
           totalRevenue: totalRevenue._sum.amount || 0,
-          statusBreakdown: monthlyData.reduce(
+          statusBreakdown: statusBreakdown.reduce(
             (acc, item) => {
               acc[item.status] = {
-                count: item._count,
+                count: item._count || 0,
                 total: item._sum.amount || 0,
                 average: item._avg.amount || 0,
               };
               return acc;
             },
-            {}
+            {
+              PAID: { count: 0, total: 0, average: 0 },
+              PENDING: { count: 0, total: 0, average: 0 },
+              OVERDUE: { count: 0, total: 0, average: 0 },
+            }
           ),
         },
         monthlyBreakdown: monthlyBreakdown.map(item => ({
           month: item.month,
-          count: Number(item.count),
+          count: Number(item.count) || 0,
           paidAmount: Number(item.paid_amount) || 0,
           pendingAmount: Number(item.pending_amount) || 0,
+          overdueAmount: Number(item.overdue_amount) || 0,
           averageAmount: Number(item.avg_amount) || 0,
         })),
         period: { months },
@@ -169,21 +191,19 @@ export const analyticsService = {
         };
       });
 
-      // Aggregate by client (AGGREGATION pattern)
+      // Aggregate by client (AGGREGATION pattern) - SQLite compatible
       const byClient = await prisma.$queryRaw`
         SELECT 
           c.id,
           c.name,
           COUNT(*) as overdue_count,
-          SUM(p.amount) as overdue_amount,
-          MAX(EXTRACT(DAY FROM NOW() - p."dueDate")) as max_days_overdue,
-          AVG(EXTRACT(DAY FROM NOW() - p."dueDate")) as avg_days_overdue
-        FROM "Payment" p
-        INNER JOIN "Project" proj ON p."projectId" = proj.id
-        INNER JOIN "Client" c ON proj."clientId" = c.id
-        WHERE c."userId" = ${userId}
+          SUM(p.amount) as overdue_amount
+        FROM Payment p
+        INNER JOIN Project proj ON p.projectId = proj.id
+        INNER JOIN Client c ON proj.clientId = c.id
+        WHERE c.userId = ${userId}
         AND p.status != 'PAID'
-        AND p."dueDate" < NOW()
+        AND p.dueDate < datetime('now')
         GROUP BY c.id, c.name
         ORDER BY overdue_amount DESC
       `;
@@ -207,8 +227,13 @@ export const analyticsService = {
           clientName: item.name,
           overdueCount: Number(item.overdue_count),
           overdueAmount: Number(item.overdue_amount),
-          maxDaysOverdue: Number(item.max_days_overdue),
-          avgDaysOverdue: Math.round(Number(item.avg_days_overdue)),
+          maxDaysOverdue: Math.max(...withDaysOverdue.filter(p => p.project.clientId === item.id).map(p => p.daysOverdue) || [0]),
+          avgDaysOverdue: Math.round(
+            withDaysOverdue.filter(p => p.project.clientId === item.id).length > 0
+              ? withDaysOverdue.filter(p => p.project.clientId === item.id).reduce((sum, p) => sum + p.daysOverdue, 0) /
+                withDaysOverdue.filter(p => p.project.clientId === item.id).length
+              : 0
+          ),
         })),
         details: withDaysOverdue.map(p => ({
           paymentId: p.id,
@@ -252,7 +277,7 @@ export const analyticsService = {
         };
       }
 
-      // COMPLEX JOIN with AGGREGATION pattern
+      // COMPLEX JOIN with AGGREGATION pattern - SQLite compatible
       const clientRevenue = await prisma.$queryRaw`
         SELECT 
           c.id,
@@ -264,16 +289,16 @@ export const analyticsService = {
           SUM(CASE WHEN pay.status = 'PENDING' THEN pay.amount ELSE 0 END) as pending_amount,
           SUM(pay.amount) as total_amount,
           AVG(pay.amount) as avg_payment,
-          MAX(pay."createdAt") as last_payment,
+          MAX(pay.createdAt) as last_payment,
           COUNT(CASE WHEN t.status = 'COMPLETED' THEN 1 END) as completed_tasks,
           COUNT(t.id) as total_tasks
-        FROM "Client" c
-        LEFT JOIN "Project" p ON c.id = p."clientId"
-        LEFT JOIN "Payment" pay ON p.id = pay."projectId"
-        LEFT JOIN "Task" t ON p.id = t."projectId"
-        WHERE c."userId" = ${userId}
+        FROM Client c
+        LEFT JOIN Project p ON c.id = p.clientId
+        LEFT JOIN Payment pay ON p.id = pay.projectId
+        LEFT JOIN Task t ON p.id = t.projectId
+        WHERE c.userId = ${userId}
         GROUP BY c.id, c.name, c.email
-        ORDER BY total_amount DESC NULLS LAST
+        ORDER BY COALESCE(total_amount, 0) DESC
       `;
 
       // Calculate totals

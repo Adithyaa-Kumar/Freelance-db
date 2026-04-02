@@ -1,5 +1,5 @@
-// Production-grade 3NF PostgreSQL database schema with Prisma ORM
-// Includes normalized data model, relationships, cascade deletes, and indexes
+// SQLite-compatible database schema for Freelance Flow
+// Supports all CRUD operations for projects, clients, tasks, and payments
 
 generator client {
   provider = "prisma-client-js"
@@ -19,12 +19,13 @@ model User {
   id            String   @id @default(cuid())
   name          String
   email         String   @unique
-  passwordHash  String
+  password      String
+  role          String   @default("freelancer")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
-  client        Client?
+  clients       Client[]
   activityLogs  ActivityLog[]
 
   @@index([email])
@@ -35,10 +36,10 @@ model User {
 // CLIENT MANAGEMENT
 // ============================================================================
 
-/// Clients table - Client/Company profiles (1:1 relationship with users)
+/// Clients table - Client/Company profiles
 model Client {
   id            String   @id @default(cuid())
-  userId        String   @unique
+  userId        String
   name          String
   email         String
   company       String
@@ -62,12 +63,13 @@ model Client {
 /// Projects table - Project management with budget and timeline tracking
 model Project {
   id            String   @id @default(cuid())
+  userId        String
   clientId      String
   name          String
   description   String?
-  budget        Decimal
-  status        ProjectStatus @default(ONGOING)
-  priority      Priority @default(MEDIUM)
+  budget        Float
+  status        String   @default("ONGOING")
+  priority      String   @default("MEDIUM")
   startDate     DateTime
   endDate       DateTime?
   createdAt     DateTime @default(now())
@@ -80,7 +82,9 @@ model Project {
   payments      Payment[]
   tasks         Task[]
 
+  @@index([userId])
   @@index([clientId])
+  @@index([status])
   @@map("projects")
 }
 
@@ -92,14 +96,14 @@ model Project {
 model Payment {
   id            String   @id @default(cuid())
   projectId     String
-  amount        Decimal  @db.Decimal(12, 2)
-  currency      String   @default("USD") @db.VarChar(3)
-  invoiceNumber String   @unique @db.VarChar(255)
-  status        PaymentStatus @default(PENDING)
-  dueDate       DateTime @db.Timestamp(3)
-  paidDate      DateTime? @db.Timestamp(3)
-  createdAt     DateTime @default(now()) @db.Timestamp(3)
-  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+  amount        Float
+  currency      String   @default("USD")
+  invoiceNumber String   @unique
+  status        String   @default("PENDING")
+  dueDate       DateTime
+  paidDate      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Foreign keys
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -118,11 +122,11 @@ model Payment {
 model Task {
   id            String   @id @default(cuid())
   projectId     String
-  title         String   @db.VarChar(255)
-  status        TaskStatus @default(PENDING)
-  deadline      DateTime? @db.Timestamp(3)
-  createdAt     DateTime @default(now()) @db.Timestamp(3)
-  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+  title         String
+  status        String   @default("PENDING")
+  deadline      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Foreign keys
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -140,9 +144,9 @@ model Task {
 model ActivityLog {
   id            String   @id @default(cuid())
   userId        String
-  action        String   @db.VarChar(255)
-  timestamp     DateTime @default(now()) @db.Timestamp(3)
-  details       String?  @db.Text
+  action        String
+  timestamp     DateTime @default(now())
+  details       String?
 
   // Foreign keys
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -150,40 +154,4 @@ model ActivityLog {
   @@index([userId])
   @@index([timestamp])
   @@map("activity_logs")
-}
-
-// ============================================================================
-// ENUMS - Type constraints for data integrity
-// ============================================================================
-
-enum ProjectStatus {
-  ONGOING
-  COMPLETED
-
-  @@map("project_status")
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-
-  @@map("priority")
-}
-
-enum PaymentStatus {
-  PAID
-  PENDING
-  OVERDUE
-
-  @@map("payment_status")
-}
-
-enum TaskStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-
-  @@map("task_status")
 }

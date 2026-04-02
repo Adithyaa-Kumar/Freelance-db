@@ -1,15 +1,18 @@
 // Seed Controller - Handle data seeding and import operations
 
 import { prisma } from '../lib/prisma.js';
+import bcrypt from 'bcrypt';
 
 /**
  * POST /api/seed/import
  * Populate database with realistic sample data
+ * Idempotent operation - can be run multiple times safely
  */
 export const seedDatabase = async (req, res) => {
   try {
     console.log('🌱 Starting database seed...\n');
 
+    // Get current user from auth middleware
     const userId = req.userId;
     if (!userId) {
       return res.status(401).json({
@@ -18,24 +21,27 @@ export const seedDatabase = async (req, res) => {
       });
     }
 
-    // Clear existing data for this user
-    console.log('🗑️  Clearing existing data...');
+    // Delete existing data for this user (preserve other users' data)
+    console.log('🗑️  Clearing existing data for user...');
     await prisma.activityLog.deleteMany({ where: { userId } });
     await prisma.payment.deleteMany({
-      where: { project: { userId } },
+      where: {
+        project: { userId },
+      },
     });
     await prisma.task.deleteMany({
-      where: { project: { userId } },
+      where: {
+        project: { userId },
+      },
     });
     await prisma.project.deleteMany({ where: { userId } });
     await prisma.client.deleteMany({ where: { userId } });
 
-    // Create clients
+    // Create clients (1:1 with users, multiple per user for demo)
     console.log('🏢 Creating clients...');
     const clients = await Promise.all([
       prisma.client.create({
         data: {
-          userId,
           name: 'TechCorp Inc',
           email: 'contact@techcorp.com',
           company: 'Technology Solutions',
@@ -43,7 +49,6 @@ export const seedDatabase = async (req, res) => {
       }),
       prisma.client.create({
         data: {
-          userId,
           name: 'Digital Designs',
           email: 'hello@digitaldesigns.com',
           company: 'Design Agency',
@@ -51,7 +56,6 @@ export const seedDatabase = async (req, res) => {
       }),
       prisma.client.create({
         data: {
-          userId,
           name: 'Growth Marketing Co',
           email: 'info@growthmarketing.com',
           company: 'Marketing Services',
@@ -59,7 +63,6 @@ export const seedDatabase = async (req, res) => {
       }),
       prisma.client.create({
         data: {
-          userId,
           name: 'Cloud Innovations',
           email: 'team@cloudinnovations.io',
           company: 'Software Development',
@@ -70,9 +73,9 @@ export const seedDatabase = async (req, res) => {
     // Create projects
     console.log('📁 Creating projects...');
     const projects = await Promise.all([
+      // Client 1 projects
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[0].id,
           name: 'Website Redesign',
           description: 'Complete redesign of company website with modern UI',
@@ -85,7 +88,6 @@ export const seedDatabase = async (req, res) => {
       }),
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[0].id,
           name: 'Mobile App Development',
           description: 'Cross-platform mobile app for iOS and Android',
@@ -96,9 +98,9 @@ export const seedDatabase = async (req, res) => {
           endDate: new Date('2024-08-31'),
         },
       }),
+      // Client 2 projects
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[1].id,
           name: 'Branding Package',
           description: 'Logo design, brand guidelines, and marketing materials',
@@ -111,7 +113,6 @@ export const seedDatabase = async (req, res) => {
       }),
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[1].id,
           name: 'Social Media Campaign',
           description: 'Design and implementation of social media strategy',
@@ -122,9 +123,9 @@ export const seedDatabase = async (req, res) => {
           endDate: new Date('2024-05-31'),
         },
       }),
+      // Client 3 projects
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[2].id,
           name: 'SEO Optimization',
           description: 'Website SEO audit and optimization services',
@@ -137,7 +138,6 @@ export const seedDatabase = async (req, res) => {
       }),
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[2].id,
           name: 'Content Marketing Strategy',
           description: 'Develop and execute content marketing plan',
@@ -148,9 +148,9 @@ export const seedDatabase = async (req, res) => {
           endDate: new Date('2024-07-31'),
         },
       }),
+      // Client 4 projects
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[3].id,
           name: 'Cloud Infrastructure Setup',
           description: 'AWS and Azure infrastructure setup and optimization',
@@ -163,7 +163,6 @@ export const seedDatabase = async (req, res) => {
       }),
       prisma.project.create({
         data: {
-          userId,
           clientId: clients[3].id,
           name: 'API Development',
           description: 'RESTful API development for mobile and web applications',
@@ -179,6 +178,7 @@ export const seedDatabase = async (req, res) => {
     // Create tasks
     console.log('📋 Creating tasks...');
     await Promise.all([
+      // Tasks for Website Redesign
       prisma.task.create({
         data: {
           projectId: projects[0].id,
@@ -203,6 +203,7 @@ export const seedDatabase = async (req, res) => {
           deadline: new Date('2024-04-30'),
         },
       }),
+      // Tasks for Mobile App
       prisma.task.create({
         data: {
           projectId: projects[1].id,
@@ -227,6 +228,7 @@ export const seedDatabase = async (req, res) => {
           deadline: new Date('2024-05-31'),
         },
       }),
+      // Tasks for Branding Package (completed)
       prisma.task.create({
         data: {
           projectId: projects[2].id,
@@ -243,6 +245,7 @@ export const seedDatabase = async (req, res) => {
           deadline: new Date('2023-12-15'),
         },
       }),
+      // Tasks for Social Media
       prisma.task.create({
         data: {
           projectId: projects[3].id,
@@ -259,6 +262,7 @@ export const seedDatabase = async (req, res) => {
           deadline: new Date('2024-04-30'),
         },
       }),
+      // Additional tasks
       prisma.task.create({
         data: {
           projectId: projects[4].id,
@@ -296,6 +300,7 @@ export const seedDatabase = async (req, res) => {
     // Create payments
     console.log('💳 Creating payments...');
     await Promise.all([
+      // Payments for Project 1
       prisma.payment.create({
         data: {
           projectId: projects[0].id,
@@ -315,6 +320,7 @@ export const seedDatabase = async (req, res) => {
           dueDate: new Date('2024-05-15'),
         },
       }),
+      // Payments for Project 2
       prisma.payment.create({
         data: {
           projectId: projects[1].id,
@@ -344,6 +350,7 @@ export const seedDatabase = async (req, res) => {
           dueDate: new Date('2024-07-01'),
         },
       }),
+      // Payments for Project 3 (completed)
       prisma.payment.create({
         data: {
           projectId: projects[2].id,
@@ -354,6 +361,7 @@ export const seedDatabase = async (req, res) => {
           paidDate: new Date('2024-01-13'),
         },
       }),
+      // Payments for Project 4
       prisma.payment.create({
         data: {
           projectId: projects[3].id,
@@ -363,6 +371,7 @@ export const seedDatabase = async (req, res) => {
           dueDate: new Date('2024-05-15'),
         },
       }),
+      // Payments for Project 5 (completed)
       prisma.payment.create({
         data: {
           projectId: projects[4].id,
@@ -373,6 +382,7 @@ export const seedDatabase = async (req, res) => {
           paidDate: new Date('2024-02-27'),
         },
       }),
+      // Payments for Project 6
       prisma.payment.create({
         data: {
           projectId: projects[5].id,
@@ -382,6 +392,7 @@ export const seedDatabase = async (req, res) => {
           dueDate: new Date('2024-06-01'),
         },
       }),
+      // Payments for Project 7
       prisma.payment.create({
         data: {
           projectId: projects[6].id,
@@ -401,6 +412,7 @@ export const seedDatabase = async (req, res) => {
           dueDate: new Date('2024-06-15'),
         },
       }),
+      // Payments for Project 8
       prisma.payment.create({
         data: {
           projectId: projects[7].id,
@@ -423,21 +435,21 @@ export const seedDatabase = async (req, res) => {
 
     console.log('✓ Database seed completed successfully!\n');
 
-    res.status(201).json({
+    return res.status(200).json({
       success: true,
       message: 'Database seeded successfully',
       data: {
-        clients_created: clients.length,
-        projects_created: projects.length,
-        tasks_created: 14,
-        payments_created: 13,
+        clientsCreated: clients.length,
+        projectsCreated: projects.length,
+        totalSampleData: `${clients.length} clients, ${projects.length} projects, and associated tasks & payments`,
       },
     });
   } catch (error) {
-    console.error('❌ Seed failed:', error.message);
-    res.status(500).json({
+    console.error('Seed operation failed:', error);
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || 'Failed to seed database',
     });
   }
 };
+
