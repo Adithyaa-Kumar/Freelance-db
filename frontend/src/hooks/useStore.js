@@ -2,21 +2,36 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
 export const useAuthStore = create(
-  devtools(
-    persist(
-      (set) => ({
-        user: null,
-        token: null,
-        isLoading: false,
-        setUser: (user) => set({ user }),
-        setToken: (token) => set({ token }),
-        setIsLoading: (isLoading) => set({ isLoading }),
-        logout: () => set({ user: null, token: null }),
-      }),
-      {
-        name: 'auth-storage',
-      }
-    )
+  persist(
+    devtools((set) => ({
+      user: null,
+      token: null,
+      isLoading: false,
+      setUser: (user) => {
+        console.log('[Zustand] Setting user:', user);
+        set({ user });
+      },
+      setToken: (token) => {
+        console.log('[Zustand] Setting token:', token ? 'present' : 'null');
+        set({ token });
+      },
+      setIsLoading: (isLoading) => set({ isLoading }),
+      logout: () => {
+        console.log('[Zustand] Logging out');
+        set({ user: null, token: null });
+      },
+    })),
+    {
+      name: 'auth-storage',
+      version: 1,
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('[Zustand] Failed to rehydrate auth store:', error);
+        } else {
+          console.log('[Zustand] Rehydrated from storage, token:', state?.token ? 'present' : 'null');
+        }
+      },
+    }
   )
 );
 

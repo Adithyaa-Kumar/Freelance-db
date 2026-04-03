@@ -22,12 +22,18 @@ const AuthRoute = ({ children }) => {
   return token ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
+const RootRoute = () => {
+  const { token } = useAuthStore();
+  return <Navigate to={token ? "/dashboard" : "/login"} replace />;
+};
+
 function App() {
   useAuth();
 
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<RootRoute />} />
         <Route
           path="/login"
           element={
@@ -104,7 +110,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );

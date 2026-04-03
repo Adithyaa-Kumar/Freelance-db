@@ -13,9 +13,15 @@ const mockPayments = [
 // Get all payments
 router.get('/', verifyAuth, (req, res) => {
   try {
-    res.json(mockPayments);
+    res.json({
+      success: true,
+      data: mockPayments,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
@@ -24,11 +30,20 @@ router.get('/:id', verifyAuth, (req, res) => {
   try {
     const payment = mockPayments.find(p => p.id === req.params.id);
     if (!payment) {
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found',
+      });
     }
-    res.json(payment);
+    res.json({
+      success: true,
+      data: payment,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
@@ -44,9 +59,15 @@ router.post('/', verifyAuth, (req, res) => {
       dueDate,
     };
     mockPayments.push(newPayment);
-    res.status(201).json(newPayment);
+    res.status(201).json({
+      success: true,
+      data: newPayment,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 

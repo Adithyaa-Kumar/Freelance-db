@@ -1,68 +1,37 @@
 import express from 'express';
-import { taskController } from '../controllers/taskController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All task routes require authentication
-router.use(authMiddleware);
+// Mock tasks data
+const mockTasks = [
+  { id: '1', title: 'Design Mockups', status: 'IN_PROGRESS', deadline: '2024-04-15', projectId: '1', priority: 'HIGH', description: 'Create wireframes and UI mockups' },
+  { id: '2', title: 'Frontend Dev', status: 'IN_PROGRESS', deadline: '2024-05-01', projectId: '1', priority: 'HIGH', description: 'Build responsive React components' },
+  { id: '3', title: 'Backend API', status: 'PENDING', deadline: '2024-05-15', projectId: '2', priority: 'MEDIUM', description: 'Develop REST API endpoints' },
+  { id: '4', title: 'Testing', status: 'COMPLETED', deadline: '2024-03-31', projectId: '3', priority: 'MEDIUM', description: 'QA and bug fixes' },
+  { id: '5', title: 'Database Setup', status: 'COMPLETED', deadline: '2024-03-20', projectId: '2', priority: 'HIGH', description: 'Configure PostgreSQL database' },
+  { id: '6', title: 'Security Review', status: 'IN_PROGRESS', deadline: '2024-04-22', projectId: '1', priority: 'HIGH', description: 'Security audit and penetration testing' },
+  { id: '7', title: 'Documentation', status: 'PENDING', deadline: '2024-05-10', projectId: '2', priority: 'LOW', description: 'Write API documentation' },
+  { id: '8', title: 'Deployment Setup', status: 'PENDING', deadline: '2024-06-01', projectId: '1', priority: 'MEDIUM', description: 'Configure CI/CD pipeline' },
+  { id: '9', title: 'Performance Optimization', status: 'PENDING', deadline: '2024-05-25', projectId: '3', priority: 'HIGH', description: 'Optimize database queries' },
+  { id: '10', title: 'User Training', status: 'NOT_STARTED', deadline: '2024-06-15', projectId: '1', priority: 'MEDIUM', description: 'Create training materials' },
+];
 
-/**
- * @route   GET /api/tasks
- * @desc    Get all tasks with optional statistics
- * @access  Private
- * @query   stats - true/false return statistics breakdown by status
- */
-router.get('/', taskController.getAll);
+router.get('/', authMiddleware, (req, res) => {
+  res.json({ success: true, data: mockTasks });
+});
 
-/**
- * @route   GET /api/tasks/by-status/:status
- * @desc    Get tasks filtered by status
- * @access  Private
- * @params  status - TODO, IN_PROGRESS, COMPLETED
- */
-router.get('/by-status/:status', taskController.getByStatus);
+router.get('/:id', authMiddleware, (req, res) => {
+  const task = mockTasks.find(t => t.id === req.params.id);
+  if (!task) return res.status(404).json({ success: false, message: 'Not found' });
+  res.json({ success: true, data: task });
+});
 
-/**
- * @route   GET /api/tasks/project/:projectId
- * @desc    Get all tasks for a specific project
- * @access  Private
- * @params  projectId - project ID
- */
-router.get('/project/:projectId', taskController.getByProject);
-
-/**
- * @route   POST /api/tasks
- * @desc    Create new task
- * @access  Private
- * @body    projectId, title, deadline, status
- */
-router.post('/', taskController.create);
-
-/**
- * @route   PUT /api/tasks/:id/status
- * @desc    Update task status with event logging
- * @access  Private
- * @params  id - task ID
- * @body    status - new status (TODO, IN_PROGRESS, COMPLETED)
- */
-router.put('/:id/status', taskController.updateStatus);
-
-/**
- * @route   PUT /api/tasks/:id
- * @desc    Update task details (title, deadline)
- * @access  Private
- * @params  id - task ID
- * @body    title, deadline
- */
-router.put('/:id', taskController.update);
-
-/**
- * @route   DELETE /api/tasks/:id
- * @desc    Delete task with audit logging
- * @access  Private
- * @params  id - task ID
- */
-router.delete('/:id', taskController.delete);
+router.post('/', authMiddleware, (req, res) => {
+  const { title, status, deadline, projectId, priority, description } = req.body;
+  const newTask = { id: Date.now().toString(), title, status, deadline, projectId, priority, description };
+  mockTasks.push(newTask);
+  res.status(201).json({ success: true, data: newTask });
+});
 
 export default router;

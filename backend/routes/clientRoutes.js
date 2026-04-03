@@ -1,55 +1,29 @@
 import express from 'express';
-import { clientController } from '../controllers/clientController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All client routes require authentication
-router.use(authMiddleware);
+const mockClients = [
+  { id: '1', name: 'Acme Corp', email: 'contact@acme.com', company: 'Acme Corp Inc' },
+  { id: '2', name: 'TechStart', email: 'info@techstart.com', company: 'TechStart LLC' },
+  { id: '3', name: 'DataCorp', email: 'hello@datacorp.com', company: 'DataCorp Solutions' },
+];
 
-/**
- * @route   GET /api/clients
- * @desc    Get all clients for authenticated user
- * @access  Private
- */
-router.get('/', clientController.getAll);
+router.get('/', authMiddleware, (req, res) => {
+  res.json({ success: true, data: mockClients });
+});
 
-/**
- * @route   GET /api/clients/search
- * @desc    Search clients by name, email, or company
- * @access  Private
- * @query   q - Search query string
- */
-router.get('/search', clientController.search);
+router.get('/:id', authMiddleware, (req, res) => {
+  const client = mockClients.find(c => c.id === req.params.id);
+  if (!client) return res.status(404).json({ success: false, message: 'Not found' });
+  res.json({ success: true, data: client });
+});
 
-/**
- * @route   GET /api/clients/:id
- * @desc    Get single client with projects, tasks, payments
- * @access  Private
- */
-router.get('/:id', clientController.getById);
-
-/**
- * @route   POST /api/clients
- * @desc    Create new client
- * @access  Private
- * @body    name, email, company, budget
- */
-router.post('/', clientController.create);
-
-/**
- * @route   PUT /api/clients/:id
- * @desc    Update client details
- * @access  Private
- * @body    name, email, company, budget
- */
-router.put('/:id', clientController.update);
-
-/**
- * @route   DELETE /api/clients/:id
- * @desc    Delete client and related records
- * @access  Private
- */
-router.delete('/:id', clientController.delete);
+router.post('/', authMiddleware, (req, res) => {
+  const { name, email, company } = req.body;
+  const newClient = { id: Date.now().toString(), name, email, company };
+  mockClients.push(newClient);
+  res.status(201).json({ success: true, data: newClient });
+});
 
 export default router;

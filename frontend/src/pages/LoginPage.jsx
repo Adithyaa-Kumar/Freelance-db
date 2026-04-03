@@ -26,17 +26,34 @@ export const LoginPage = () => {
     setIsLoading(true);
 
     try {
+      console.log('[LoginPage] Attempting login with:', { email });
       const response = await authApi.login(email, password);
+      console.log('[LoginPage] Login response received:', response);
+      console.log('[LoginPage] response.data:', response.data);
+      
       const { token, user } = response.data;
+      console.log('[LoginPage] Extracted token and user:', { token: token ? 'present' : 'missing', user: user ? 'present' : 'missing' });
 
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      if (!token || !user) {
+        console.error('[LoginPage] Missing token or user in response');
+        throw new Error('Invalid response from server');
+      }
+
+      // Set token and user - Zustand persist middleware saves automatically
+      console.log('[LoginPage] Setting token and user in store...');
       setToken(token);
       setUser(user);
 
-      navigate('/dashboard');
+      // Verify state was set before navigating
+      console.log('[LoginPage] Triggering redirect after 50ms...');
+      setTimeout(() => {
+        console.log('[LoginPage] Navigating to /dashboard');
+        navigate('/dashboard', { replace: true });
+      }, 50);
     } catch (err) {
-      const errorMessage = err?.message || 'Login failed. Please try again.';
+      console.error('[LoginPage] Login error:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Login failed. Please try again.';
+      console.error('[LoginPage] Error message:', errorMessage);
       setError(errorMessage);
     } finally {
       setIsLoading(false);

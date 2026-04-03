@@ -9,7 +9,7 @@ const mockProjects = [
     id: '1',
     name: 'Website Redesign',
     description: 'Complete redesign of company website',
-    status: 'in-progress',
+    status: 'ONGOING',
     budget: 5000,
     deadline: '2024-06-30',
   },
@@ -17,7 +17,7 @@ const mockProjects = [
     id: '2',
     name: 'Mobile App',
     description: 'Build iOS and Android app',
-    status: 'active',
+    status: 'ONGOING',
     budget: 15000,
     deadline: '2024-12-31',
   },
@@ -25,7 +25,7 @@ const mockProjects = [
     id: '3',
     name: 'Database Migration',
     description: 'Migrate legacy database',
-    status: 'completed',
+    status: 'COMPLETED',
     budget: 3000,
     deadline: '2024-03-15',
   },
@@ -34,10 +34,14 @@ const mockProjects = [
 // Get all projects
 router.get('/', verifyAuth, (req, res) => {
   try {
-    res.json(mockProjects);
+    res.json({
+      success: true,
+      data: mockProjects,
+    });
   } catch (error) {
     res.status(500).json({
-      error: error.message,
+      success: false,
+      message: error.message,
     });
   }
 });
@@ -49,14 +53,19 @@ router.get('/:id', verifyAuth, (req, res) => {
 
     if (!project) {
       return res.status(404).json({
-        error: 'Project not found',
+        success: false,
+        message: 'Project not found',
       });
     }
 
-    res.json(project);
+    res.json({
+      success: true,
+      data: project,
+    });
   } catch (error) {
     res.status(500).json({
-      error: error.message,
+      success: false,
+      message: error.message,
     });
   }
 });
@@ -77,7 +86,7 @@ router.post('/', verifyAuth, (req, res) => {
       id: Date.now().toString(),
       name,
       description,
-      status: 'active',
+      status: 'ONGOING',
       budget,
       deadline,
     };

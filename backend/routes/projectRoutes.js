@@ -1,47 +1,31 @@
 import express from 'express';
-import { projectController } from '../controllers/projectController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All project routes require authentication
-router.use(authMiddleware);
+// Mock projects storage
+const mockProjects = [
+  { id: '1', name: 'Website Redesign', description: 'Complete redesign of company website', status: 'ONGOING', budget: 5000, deadline: '2024-06-30' },
+  { id: '2', name: 'Mobile App', description: 'Build iOS and Android app', status: 'ONGOING', budget: 15000, deadline: '2024-12-31' },
+  { id: '3', name: 'Database Migration', description: 'Migrate legacy database', status: 'COMPLETED', budget: 3000, deadline: '2024-03-15' },
+];
 
-/**
- * @route   GET /api/projects
- * @desc    Get all projects for authenticated user
- * @access  Private
- */
-router.get('/', projectController.getAll);
+router.get('/', authMiddleware, (req, res) => {
+  res.json({ success: true, data: mockProjects });
+});
 
-/**
- * @route   GET /api/projects/:id
- * @desc    Get single project with client, tasks, payments
- * @access  Private
- */
-router.get('/:id', projectController.getById);
+router.get('/:id', authMiddleware, (req, res) => {
+  const project = mockProjects.find(p => p.id === req.params.id);
+  if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+  res.json({ success: true, data: project });
+});
 
-/**
- * @route   POST /api/projects
- * @desc    Create new project
- * @access  Private
- * @body    clientId, name, description, budget, deadline
- */
-router.post('/', projectController.create);
-
-/**
- * @route   PUT /api/projects/:id
- * @desc    Update project details
- * @access  Private
- * @body    name, description, budget, deadline
- */
-router.put('/:id', projectController.update);
-
-/**
- * @route   DELETE /api/projects/:id
- * @desc    Delete project and related records
- * @access  Private
- */
-router.delete('/:id', projectController.delete);
+router.post('/', authMiddleware, (req, res) => {
+  const { name, description, budget, deadline } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'Name required' });
+  const newProject = { id: Date.now().toString(), name, description, status: 'ONGOING', budget, deadline };
+  mockProjects.push(newProject);
+  res.status(201).json({ success: true, data: newProject });
+});
 
 export default router;

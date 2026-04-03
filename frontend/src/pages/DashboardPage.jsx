@@ -69,7 +69,7 @@ export const DashboardPage = () => {
 
   const totalRevenue = revenueData.reduce((sum, d) => sum + d.revenue, 0);
   const pendingPayments = revenueData.reduce((sum, d) => sum + d.pending, 0);
-  const activeProjects = projects.filter((p) => p.status === 'in-progress').length;
+  const activeProjects = projects.filter((p) => p.status === 'ONGOING').length;
   const overdueCount = overdueData.reduce((sum, d) => sum + d.overdue, 0);
 
   const sqlQueries = {

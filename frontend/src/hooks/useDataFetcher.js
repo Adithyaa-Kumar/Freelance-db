@@ -19,7 +19,7 @@ export const useDataFetcher = (initialEntity = 'projects') => {
   const { token } = useAuthStore();
   const debounceTimerRef = useRef(null);
   const schemaFetchedRef = useRef(false);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000') + '/api';
 
   // Fetch schema only once when token changes
   useEffect(() => {

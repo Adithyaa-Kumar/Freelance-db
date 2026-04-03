@@ -13,9 +13,15 @@ const mockClients = [
 // Get all clients
 router.get('/', verifyAuth, (req, res) => {
   try {
-    res.json(mockClients);
+    res.json({
+      success: true,
+      data: mockClients,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
@@ -24,11 +30,20 @@ router.get('/:id', verifyAuth, (req, res) => {
   try {
     const client = mockClients.find(c => c.id === req.params.id);
     if (!client) {
-      return res.status(404).json({ error: 'Client not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Client not found',
+      });
     }
-    res.json(client);
+    res.json({
+      success: true,
+      data: client,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 
@@ -43,9 +58,15 @@ router.post('/', verifyAuth, (req, res) => {
       company,
     };
     mockClients.push(newClient);
-    res.status(201).json(newClient);
+    res.status(201).json({
+      success: true,
+      data: newClient,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 

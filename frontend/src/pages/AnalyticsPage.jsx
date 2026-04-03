@@ -23,7 +23,7 @@ export const AnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuthStore();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000') + '/api';
 
   // Fetch analytics data - only called when token changes
   useEffect(() => {

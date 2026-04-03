@@ -1,65 +1,92 @@
 import express from 'express';
-import { analyticsController } from '../controllers/analyticsController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// All analytics routes require authentication
-router.use(authMiddleware);
+// Analytics mock data
+router.get('/stats', authMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      totalProjects: 4,
+      activeProjects: 3,
+      completedProjects: 1,
+      totalRevenue: 38500,
+      pendingRevenue: 17500,
+      overdueRevenue: 4500,
+      avgProjectValue: 9625,
+      totalTasks: 10,
+      completedTasks: 2,
+      inProgressTasks: 3,
+      pendingTasks: 5,
+      clientCount: 5,
+      taskCompletionRate: 20,
+    },
+  });
+});
 
-/**
- * @route   GET /api/analytics/revenue
- * @desc    Get monthly revenue breakdown with aggregations
- * @access  Private
- * @query   months - number of months to include (default 12, max 60)
- * 
- * Features:
- * - AGGREGATION: GROUP BY month, SUM(amount), COUNT(*)
- * - Status breakdown (PAID, PENDING, OVERDUE)
- * - Monthly average calculations
- * - Total revenue summary
- */
-router.get('/revenue', analyticsController.getMonthlyRevenue);
+router.get('/revenue', authMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    data: [
+      { month: 'Jan', revenue: 12000, pending: 3000, paid: 12000 },
+      { month: 'Feb', revenue: 19000, pending: 2000, paid: 19000 },
+      { month: 'Mar', revenue: 15000, pending: 8000, paid: 12000 },
+      { month: 'Apr', revenue: 25000, pending: 5000, paid: 20000 },
+      { month: 'May', revenue: 22000, pending: 6000, paid: 16000 },
+      { month: 'Jun', revenue: 28000, pending: 4000, paid: 24000 },
+    ],
+  });
+});
 
-/**
- * @route   GET /api/analytics/overdue
- * @desc    Get overdue payment analysis with client breakdown
- * @access  Private
- * 
- * Features:
- * - SUBQUERY: WHERE dueDate < NOW AND status != 'PAID'
- * - COMPLEX JOIN: Payment → Project → Client (3-level)
- * - AGGREGATION: GROUP BY client with SUM/AVG/MAX calculations
- * - Days overdue tracking
- * - Client-level summary
- */
-router.get('/overdue', analyticsController.getOverdueAnalysis);
-
-/**
- * @route   GET /api/analytics/client-revenue
- * @desc    Get revenue breakdown by client with detailed metrics
- * @access  Private
- * 
- * Features:
- * - COMPLEX JOIN: Client → Projects → Payments → Tasks (4-level)
- * - AGGREGATION: GROUP BY client with multiple calculations
- * - Project count, payment metrics
- * - Task completion rate per client
- * - Last payment tracking
- */
-router.get('/client-revenue', analyticsController.getClientRevenueAnalysis);
-
-/**
- * @route   GET /api/analytics/dashboard
- * @desc    Get complete dashboard with all metrics
- * @access  Private
- * 
- * Combines:
- * - Monthly revenue data
- * - Overdue payment analysis
- * - Client revenue breakdown
- * - Task completion metrics
- */
-router.get('/dashboard', analyticsController.getDashboard);
+router.get('/dashboard', authMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      revenue: {
+        summary: {
+          totalRevenue: 144000,
+          projectCount: 12,
+          avgProjectBudget: 9625,
+        },
+        monthlyBreakdown: [
+          { month: 'January', paidAmount: 12000, pendingAmount: 3000 },
+          { month: 'February', paidAmount: 19000, pendingAmount: 2000 },
+          { month: 'March', paidAmount: 15000, pendingAmount: 8000 },
+          { month: 'April', paidAmount: 25000, pendingAmount: 5000 },
+          { month: 'May', paidAmount: 22000, pendingAmount: 6000 },
+          { month: 'June', paidAmount: 28000, pendingAmount: 4000 },
+        ],
+      },
+      clientRevenue: {
+        summary: {
+          totalClients: 5,
+        },
+        details: [
+          { clientId: '1', clientName: 'Acme Corp', revenue: 45000, projects: 2 },
+          { clientId: '2', clientName: 'TechStart', revenue: 38000, projects: 2 },
+          { clientId: '3', clientName: 'DataCorp', revenue: 32000, projects: 1 },
+          { clientId: '4', clientName: 'Design Co', revenue: 28000, projects: 1 },
+          { clientId: '5', clientName: 'RetailCorp', revenue: 22000, projects: 1 },
+        ],
+      },
+      taskMetrics: {
+        totalTasks: 10,
+        completedTasks: 2,
+        inProgressTasks: 3,
+        completionRate: 20,
+      },
+      overdue: {
+        summary: {
+          overdueCount: 1,
+          overdueAmount: 4500,
+        },
+        list: [
+          { projectId: '2', projectName: 'Mobile App', daysOverdue: 20, amount: 4500 },
+        ],
+      },
+    },
+  });
+});
 
 export default router;

@@ -49,10 +49,28 @@ const api = axios.create({
  * Request Interceptor - Add auth token and handle request setup
  */
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Try to get token from localStorage first (from Zustand persist)
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    let token = null;
+    
+    if (authStorage) {
+      try {
+        const authState = JSON.parse(authStorage);
+        token = authState.state?.token || authState.token;
+      } catch (e) {
+        console.error('Failed to parse auth storage:', e);
+      }
+    }
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
+        console.debug(`[API Request] Auth header added`);
+      }
+    }
+  } catch (e) {
+    console.error('Error reading auth token:', e);
   }
 
   if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
@@ -62,14 +80,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/**
- * Response Interceptor - Handle errors, retries, and logging
+/**\n * Response Interceptor - Handle errors, retries, and logging
  */
 api.interceptors.response.use(
   (response) => {
     if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
       console.debug(`[API Response] ${response.status} ${response.config.url}`);
     }
+    
+    console.log('[API Response Interceptor] Full response:', response);
+    console.log('[API Response Interceptor] response.data:', response.data);
+    
+    // Unwrap the data if it's in the expected format
+    if (response.data?.data && response.data?.success !== false) {
+      console.log('[API Response Interceptor] Unwrapping nested data');
+      response.data = response.data.data;
+    }
+    
     return response;
   },
   async (error) => {
@@ -86,8 +113,14 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
+      // Clear auth state for 401 errors
+      try {
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+      } catch (e) {
+        // ignore
+      }
       window.location.href = '/login';
       return Promise.reject({
         message: 'Session expired. Please login again.',

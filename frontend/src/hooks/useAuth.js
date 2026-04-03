@@ -5,25 +5,31 @@ import { usersApi } from '../services/api.js';
 export const useAuth = () => {
   const { user, token, isLoading, setUser, setIsLoading } = useAuthStore();
   const [error, setError] = useState(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
-      if (token && !user) {
+      // Only fetch profile if we have a token but no user data
+      if (token && !user && !authInitialized) {
         setIsLoading(true);
         try {
           const response = await usersApi.getProfile();
           setUser(response.data);
+          setError(null);
         } catch (err) {
+          console.error('Failed to load user profile:', err);
           setError('Failed to load user profile');
-          setUser(null);
+          // Don't clear user on error - keep the existing data
         } finally {
           setIsLoading(false);
         }
       }
+      
+      setAuthInitialized(true);
     };
 
     initAuth();
-  }, [token, user, setUser, setIsLoading]);
+  }, [token]); // Only re-run when token changes
 
   return { user, token, isLoading, error };
 };

@@ -38,12 +38,16 @@ router.post('/login', (req, res) => {
     const token = Buffer.from(`${email}:${Date.now()}`).toString('base64');
 
     res.json({
-      user: { id: user.id, email: user.email, name: user.name },
-      token,
+      success: true,
+      data: {
+        user: { id: user.id, email: user.email, name: user.name },
+        token,
+      },
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message,
+      success: false,
+      message: error.message,
     });
   }
 });
@@ -55,13 +59,15 @@ router.post('/register', (req, res) => {
 
     if (!email || !password || !name) {
       return res.status(400).json({
-        error: 'Email, password, and name required',
+        success: false,
+        message: 'Email, password, and name required',
       });
     }
 
     if (mockUsers[email]) {
       return res.status(409).json({
-        error: 'User already exists',
+        success: false,
+        message: 'User already exists',
       });
     }
 
@@ -71,12 +77,16 @@ router.post('/register', (req, res) => {
     const token = Buffer.from(`${email}:${Date.now()}`).toString('base64');
 
     res.status(201).json({
-      user: { id: newUser.id, email: newUser.email, name: newUser.name },
-      token,
+      success: true,
+      data: {
+        user: { id: newUser.id, email: newUser.email, name: newUser.name },
+        token,
+      },
     });
   } catch (error) {
     res.status(500).json({
-      error: error.message,
+      success: false,
+      message: error.message,
     });
   }
 });

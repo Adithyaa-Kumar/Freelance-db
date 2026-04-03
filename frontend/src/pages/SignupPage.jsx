@@ -47,14 +47,21 @@ export const SignupPage = () => {
       );
       const { token, user } = response.data;
 
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      if (!token || !user) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Set token and user - Zustand persist middleware saves automatically
       setToken(token);
       setUser(user);
 
-      navigate('/dashboard');
+      // Verify state was set before navigating
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 50);
     } catch (err) {
-      const errorMessage = err?.message || 'Signup failed. Please try again.';
+      console.error('Signup error:', err);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Signup failed. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);

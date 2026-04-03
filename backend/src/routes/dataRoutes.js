@@ -6,6 +6,41 @@ import { verifyAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Schema definition for entities
+const SCHEMA = {
+  entities: {
+    projects: {
+      displayName: 'Projects',
+      fields: ['id', 'name', 'description', 'budget', 'status', 'priority', 'startDate', 'endDate', 'client'],
+      filters: ['status', 'priority'],
+      includes: ['client'],
+    },
+    tasks: {
+      displayName: 'Tasks',
+      fields: ['id', 'title', 'status', 'deadline', 'project'],
+      filters: ['status'],
+      includes: ['project'],
+    },
+    payments: {
+      displayName: 'Payments',
+      fields: ['id', 'amount', 'status', 'invoiceNumber', 'dueDate', 'project'],
+      filters: ['status'],
+      includes: ['project'],
+    },
+    clients: {
+      displayName: 'Clients',
+      fields: ['id', 'name', 'email', 'company'],
+      filters: [],
+      includes: [],
+    },
+  },
+  filters: {
+    statuses: ['ONGOING', 'COMPLETED', 'CANCELLED', 'PENDING', 'IN_PROGRESS', 'PAID', 'PENDING', 'OVERDUE'],
+    priorities: ['LOW', 'MEDIUM', 'HIGH'],
+  },
+  viewModes: ['detailed', 'summary', 'analytics'],
+};
+
 // Mock data for various entities
 const mockData = {
   projects: [
@@ -76,14 +111,23 @@ router.post('/query', verifyAuth, (req, res) => {
     const end = start + pagination.limit;
     const paginatedResults = results.slice(start, end);
 
+    // Extract column names from first result or use schema fields
+    const columns = paginatedResults.length > 0 
+      ? Object.keys(paginatedResults[0])
+      : (SCHEMA.entities[entity]?.fields || []);
+
     return res.status(200).json({
       success: true,
-      data: paginatedResults,
-      pagination: {
-        page: pagination.page,
-        limit: pagination.limit,
+      data: {
+        columns: columns,
+        rows: paginatedResults,
+        pagination: {
+          page: pagination.page,
+          limit: pagination.limit,
+          total: results.length,
+          totalPages: Math.ceil(results.length / pagination.limit),
+        },
         total: results.length,
-        totalPages: Math.ceil(results.length / pagination.limit),
       },
       timestamp: new Date(),
     });
@@ -99,43 +143,9 @@ router.post('/query', verifyAuth, (req, res) => {
 // Return schema information for Smart Data Explorer UI
 router.get('/schema', verifyAuth, (req, res) => {
   try {
-    const schema = {
-      entities: {
-        projects: {
-          displayName: 'Projects',
-          fields: ['id', 'name', 'description', 'budget', 'status', 'priority', 'startDate', 'endDate'],
-          filters: ['status', 'priority'],
-          includes: ['client'],
-        },
-        tasks: {
-          displayName: 'Tasks',
-          fields: ['id', 'title', 'status', 'deadline'],
-          filters: ['status'],
-          includes: ['project'],
-        },
-        payments: {
-          displayName: 'Payments',
-          fields: ['id', 'amount', 'status', 'invoiceNumber', 'dueDate'],
-          filters: ['status'],
-          includes: ['project'],
-        },
-        clients: {
-          displayName: 'Clients',
-          fields: ['id', 'name', 'email', 'company'],
-          filters: [],
-          includes: [],
-        },
-      },
-      filters: {
-        statuses: ['ONGOING', 'COMPLETED', 'CANCELLED', 'PENDING', 'IN_PROGRESS', 'PAID', 'PENDING', 'OVERDUE'],
-        priorities: ['LOW', 'MEDIUM', 'HIGH'],
-      },
-      viewModes: ['detailed', 'summary', 'analytics'],
-    };
-
     return res.status(200).json({
       success: true,
-      schema,
+      schema: SCHEMA,
     });
   } catch (error) {
     return res.status(500).json({
@@ -171,8 +181,76 @@ router.post('/favorites', verifyAuth, (req, res) => {
   }
 });
 
-// GET /api/data/insights/:entity
-// Get entity-specific insights
+// GET /api/data/insights (query param) or /insights/:entity (path param)
+// Get entity-specific insights with recommendations
+router.get('/insights', verifyAuth, (req, res) => {
+  try {
+    const entity = req.query.entity || 'projects';
+
+    const insights = {
+      projects: {
+        total: 4,
+        active: 3,
+        completed: 1,
+        avgBudget: 7750,
+        totalBudget: 31000,
+        recommendedActions: [
+          'Filter by HIGH priority projects to focus on critical work',
+          'Check ONGOING projects for bottlenecks',
+          'Archive COMPLETED projects to declutter',
+        ],
+      },
+      tasks: {
+        total: 4,
+        pending: 1,
+        inProgress: 2,
+        completed: 1,
+        completionRate: 25,
+        recommendedActions: [
+          'Review pending tasks and prioritize',
+          'Assign in-progress tasks to team members',
+          'Update task status regularly',
+        ],
+      },
+      payments: {
+        total: 3,
+        paid: 2,
+        pending: 1,
+        totalAmount: 10500,
+        recommendedActions: [
+          'Follow up on pending payments',
+          'Track paid invoices for record keeping',
+          'Set up payment reminders',
+        ],
+      },
+      clients: {
+        total: 3,
+        active: 3,
+        avgProjectsPerClient: 1.33,
+        recommendedActions: [
+          'Maintain regular communication with active clients',
+          'Track client satisfaction metrics',
+          'Schedule periodic check-ins',
+        ],
+      },
+    };
+
+    const entityInsights = insights[entity] || insights.projects;
+
+    return res.status(200).json({
+      success: true,
+      entity,
+      insights: entityInsights,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// Also handle path param version for compatibility
 router.get('/insights/:entity', verifyAuth, (req, res) => {
   try {
     const { entity } = req.params;
@@ -184,23 +262,44 @@ router.get('/insights/:entity', verifyAuth, (req, res) => {
         completed: 1,
         avgBudget: 7750,
         totalBudget: 31000,
+        recommendedActions: [
+          'Filter by HIGH priority projects to focus on critical work',
+          'Check ONGOING projects for bottlenecks',
+          'Archive COMPLETED projects to declutter',
+        ],
       },
       tasks: {
         total: 4,
         pending: 1,
         inProgress: 2,
         completed: 1,
+        completionRate: 25,
+        recommendedActions: [
+          'Review pending tasks and prioritize',
+          'Assign in-progress tasks to team members',
+          'Update task status regularly',
+        ],
       },
       payments: {
         total: 3,
         paid: 2,
         pending: 1,
         totalAmount: 10500,
+        recommendedActions: [
+          'Follow up on pending payments',
+          'Track paid invoices for record keeping',
+          'Set up payment reminders',
+        ],
       },
       clients: {
         total: 3,
         active: 3,
         avgProjectsPerClient: 1.33,
+        recommendedActions: [
+          'Maintain regular communication with active clients',
+          'Track client satisfaction metrics',
+          'Schedule periodic check-ins',
+        ],
       },
     };
 
