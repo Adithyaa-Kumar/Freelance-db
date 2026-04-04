@@ -19,23 +19,23 @@ name = "freelanceflow-api-dev"
 workers_dev = true
 
 # Production environment variables
-[[env.production.vars]]
+[env.production.vars]
 ENVIRONMENT = "production"
 CORS_ORIGIN = "https://freelance-db.pages.dev"
 JWT_EXPIRE = "7d"
 
 # Staging environment variables
-[[env.staging.vars]]
+[env.staging.vars]
 ENVIRONMENT = "staging"
 CORS_ORIGIN = "https://freelance-db.pages.dev"
 JWT_EXPIRE = "7d"
 
 # Development environment variables
-[[env.development.vars]]
+[env.development.vars]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:5173"
 JWT_EXPIRE = "7d"
-database_id = "YOUR_DEV_DB_ID"
+DATABASE_ID = "YOUR_DEV_DB_ID"
 
 # KV Namespace for caching (optional)
 [[kv_namespaces]]
