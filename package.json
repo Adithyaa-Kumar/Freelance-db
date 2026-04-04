@@ -26,7 +26,16 @@
     "d1:init": "wrangler d1 execute freelanceflow-production --file database/d1-schema.sql",
     "d1:list": "wrangler d1 list"
   },
-  "keywords": ["freelance", "project-management", "full-stack", "react", "express"],
+  "keywords": [
+    "freelance",
+    "project-management",
+    "full-stack",
+    "react",
+    "express"
+  ],
   "author": "FreelanceFlow Team",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.80.0"
+  }
 }
