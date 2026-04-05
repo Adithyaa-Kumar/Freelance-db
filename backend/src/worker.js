@@ -5,7 +5,7 @@
 import { Router } from 'itty-router';
 
 const router = Router();
-
+console.log("NEW DEPLOY CHECK");
 /* ================= UTILITIES ================= */
 
 function getCorsHeaders(env) {
