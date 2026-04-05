@@ -69,7 +69,7 @@ function jsonResponse(data, status, env) {
 
 /**
  * Error handler wrapper for routes
- * Ensures all errors include CORS headers
+ * Ensures errors are caught and formatted properly
  */
 function handleErrors(handler) {
   return async (request, env, ctx) => {
@@ -78,7 +78,7 @@ function handleErrors(handler) {
       
       // Ensure response exists
       if (!response) {
-        console.error('Handler returned undefined response');
+        console.error('[Route] Handler returned undefined response');
         return jsonResponse(
           {
             success: false,
@@ -88,18 +88,17 @@ function handleErrors(handler) {
           env
         );
       }
-      
-      // Ensure CORS headers are present
-      return addCorsHeaders(response, env);
+
+      return response;
     } catch (error) {
-      console.error('[Worker Error]', {
+      console.error('[Route Error]', {
+        handler: handler.name,
         message: error.message,
-        stack: error.stack,
         status: error.status,
       });
 
       const status = error.status || 500;
-      const errorResponse = jsonResponse(
+      return jsonResponse(
         {
           success: false,
           message: error.message || 'Internal server error',
@@ -108,8 +107,6 @@ function handleErrors(handler) {
         status,
         env
       );
-
-      return errorResponse;
     }
   };
 }
@@ -409,6 +406,7 @@ router.all('*', (request, env) => {
     env
   );
 });
+
 export default {
   /**
    * Main Fetch Handler
@@ -420,29 +418,35 @@ export default {
       const method = request.method;
       const pathname = url.pathname;
 
-      console.log(`[${new Date().toISOString()}] ${method} ${pathname}`, {
+      console.log(`[Worker] ${method} ${pathname}`, {
         environment: env?.ENVIRONMENT,
+        cors_origin: env?.CORS_ORIGIN,
       });
 
       // Validate env object
       if (!env) {
-        console.error('Environment object is missing');
-        return jsonResponse(
-          {
+        console.error('[Worker] Environment object is missing');
+        return new Response(
+          JSON.stringify({
             success: false,
             message: 'Server configuration error',
-          },
-          500,
-          {}
+          }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': 'http://localhost:5173',
+            },
+          }
         );
       }
 
       // Handle the request with router
-      const response = await router.handle(request, env, ctx);
+      let response = await router.handle(request, env, ctx);
 
       // Ensure response is defined
       if (!response) {
-        console.error('Router returned undefined response');
+        console.error('[Worker] Router returned undefined response');
         return jsonResponse(
           {
             success: false,
@@ -453,16 +457,30 @@ export default {
         );
       }
 
-      // Ensure CORS headers are present
-      try {
-        return addCorsHeaders(response, env);
-      } catch (corsError) {
-        console.error('Error adding CORS headers:', corsError);
-        // Return response even if CORS header addition fails
-        return response;
+      // Clone response and ensure CORS headers - don't call addCorsHeaders if already has them
+      const corsHeaders = getCorsHeaders(env);
+      const hasAccessControlOrigin = response.headers.get('Access-Control-Allow-Origin');
+      
+      if (!hasAccessControlOrigin) {
+        console.log('[Worker] Adding CORS headers to response');
+        const newHeaders = new Headers(response.headers);
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+          newHeaders.set(key, value);
+        });
+        
+        response = new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders,
+        });
       }
+
+      return response;
     } catch (error) {
-      console.error('[Worker Fatal Error]', error);
+      console.error('[Worker Fatal Error]', {
+        message: error.message,
+        stack: error.stack,
+      });
 
       return jsonResponse(
         {
@@ -480,7 +498,7 @@ export default {
    * Scheduled Handler (optional)
    */
   async scheduled(event, env, ctx) {
-    console.log('Scheduled event triggered', {
+    console.log('[Worker] Scheduled event triggered', {
       cron: event.cron,
     });
   },
