@@ -29,7 +29,7 @@ export const DashboardPage = () => {
     const fetchProjects = async () => {
       setIsLoading(true);
       try {
-        const response = await projectsApi.getAllProjects();
+        const response = await projectsApi.getAll();
         setProjects(response.data || []);
       } catch (err) {
         const errorMessage = err?.message || 'Failed to fetch projects';

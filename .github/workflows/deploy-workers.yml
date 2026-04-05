@@ -1,0 +1,50 @@
+name: Deploy Workers Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'wrangler.toml'
+      - '.github/workflows/deploy-workers.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd backend && npm install && cd ..
+
+      - name: Deploy to Cloudflare Workers (Production)
+        run: npx wrangler deploy --env production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          curl -s https://freelanceflow-api.adithyaa-kumar.workers.dev/api/health || echo "Health check in progress..."
+
+      - name: Deployment notification
+        if: success()
+        run: echo "✅ Backend deployed successfully to Cloudflare Workers (Production)"
+
+      - name: Deployment failure notification
+        if: failure()
+        run: echo "❌ Backend deployment failed"

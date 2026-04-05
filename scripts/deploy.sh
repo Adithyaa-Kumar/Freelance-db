@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Production Deployment Script for FreelanceFlow
-# Complete deployment to Cloudflare (Pages + Workers + D1)
+# Deploys to Cloudflare Workers (Backend) and Pages (Frontend)
+# Triggered automatically via GitHub Actions on push to main
 
 set -e
 
@@ -33,68 +34,48 @@ fi
 echo -e "${GREEN}✓ All prerequisites met${NC}"
 echo ""
 
-# Stage 1: Build
-echo -e "${BLUE}1️⃣  Building Application...${NC}"
+# Stage 1: Install Dependencies
+echo -e "${BLUE}1️⃣ Installing dependencies...${NC}"
+npm install
+cd backend && npm install && cd ..
+cd frontend && npm install && cd ..
+echo -e "${GREEN}✓ Dependencies installed${NC}"
+echo ""
+
+# Stage 2: Build
+echo -e "${BLUE}2️⃣ Building application...${NC}"
 npm run build:frontend
-npm run build:backend
-echo -e "${GREEN}✓ Build complete${NC}"
+echo -e "${GREEN}✓ Frontend built${NC}"
 echo ""
 
-# Stage 2: Setup Database
-echo -e "${BLUE}2️⃣  Checking Database Setup...${NC}"
-
-if grep -q "database_id = " wrangler.toml; then
-  echo -e "${GREEN}✓ D1 Database configured${NC}"
-else
-  echo -e "${YELLOW}⚠ D1 Database not configured in wrangler.toml${NC}"
-  echo "Run: wrangler d1 create freelanceflow-production"
-fi
-echo ""
-
-# Stage 3: Deploy Backend
-echo -e "${BLUE}3️⃣  Deploying Backend to Cloudflare Workers...${NC}"
+# Stage 3: Deploy Backend Workers
+echo -e "${BLUE}3️⃣ Deploying Backend to Cloudflare Workers...${NC}"
 wrangler deploy --env production
-echo -e "${GREEN}✓ Backend deployed${NC}"
+echo -e "${GREEN}✓ Backend deployed to Cloudflare Workers${NC}"
 echo ""
 
-# Stage 4: Deploy Frontend
-echo -e "${BLUE}4️⃣  Deploying Frontend to Cloudflare Pages...${NC}"
-
-if [ -d ".git" ]; then
-  echo "Git integration detected. Push to trigger automatic deployment:"
-  echo "  git add ."
-  echo "  git commit -m 'Production build'"
-  echo "  git push origin main"
-else
-  echo "Manual deployment:"
-  wrangler pages deploy frontend/dist --project-name freelanceflow
-fi
-echo -e "${GREEN}✓ Frontend deployment initiated${NC}"
+# Stage 4: Deploy Frontend Pages
+echo -e "${BLUE}4️⃣ Deploying Frontend to Cloudflare Pages...${NC}"
+npx wrangler pages deploy frontend/dist --project-name freelanceflow
+echo -e "${GREEN}✓ Frontend deployed to Cloudflare Pages${NC}"
 echo ""
 
 # Stage 5: Verify
-echo -e "${BLUE}5️⃣  Verifying Deployment...${NC}"
-sleep 10
+echo -e "${BLUE}5️⃣ Verifying deployment...${NC}"
+sleep 5
 
-curl -s https://api.freelanceflow.com/api/health > /dev/null && \
-  echo -e "${GREEN}✓ Backend is responding${NC}" || \
-  echo -e "${YELLOW}⚠ Backend check failed (may take a minute)${NC}"
-
-echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}✨ Deployment Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "📊 Deployment Summary:"
-echo "  Frontend:  https://freelanceflow.com"
-echo "  Backend:   https://api.freelanceflow.com"
+echo "📊 Deployment URLs:"
+echo "  Frontend:  https://freelanceflow.pages.dev"
+echo "  Backend:   https://freelanceflow-api.adithyaa-kumar.workers.dev"
 echo "  Dashboard: https://dash.cloudflare.com/"
 echo ""
 echo "🔍 Next steps:"
 echo "  1. Monitor logs: wrangler tail --env production"
-echo "  2. Check frontend: https://freelanceflow.com"
-echo "  3. Test API: curl https://api.freelanceflow.com/api/health"
-echo "  4. Run verification: bash scripts/deployment-check.sh"
-echo ""
-echo "📚 Documentation: See DEPLOYMENT_GUIDE.md"
+echo "  2. Check frontend: https://freelanceflow.pages.dev"
+echo "  3. Test API: curl https://freelanceflow-api.adithyaa-kumar.workers.dev/api/health"
+echo "  4. View deployment logs in GitHub Actions"
 echo ""

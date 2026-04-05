@@ -4,14 +4,21 @@ account_id = "b75373d33ed51fe68bd4f29032140bb8"
 compatibility_date = "2024-01-01"
 workers_dev = true
 
+# Build configuration
+[build]
+command = "npm run build"
+cwd = "./backend"
+
 # Production environment
 [env.production]
 name = "freelanceflow-api-production"
 workers_dev = true
+route = "https://freelanceflow-api.adithyaa-kumar.workers.dev/*"
+zone_id = ""
 
 [env.production.vars]
 ENVIRONMENT = "production"
-CORS_ORIGIN = "https://freelance-db.pages.dev"
+CORS_ORIGIN = "https://freelanceflow.pages.dev"
 JWT_EXPIRE = "7d"
 
 # Staging environment
@@ -35,5 +42,7 @@ CORS_ORIGIN = "http://localhost:5173"
 JWT_EXPIRE = "7d"
 
 # Secrets (set via: wrangler secret put NAME --env production)
-# - JWT_SECRET: Production JWT signing key
-# These are NOT set in this file for security reasons
+# Production secrets to set:
+# - wrangler secret put JWT_SECRET --env production
+# - wrangler secret put DATABASE_URL --env production
+# DO NOT commit secrets to this file for security reasons

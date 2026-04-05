@@ -272,27 +272,27 @@ export const usersApi = {
 export const projectsApi = {
   getAll: () => {
     console.log('[Projects] Fetching all projects');
-    return api.get('/projects');
+    return api.get('/api/projects');
   },
 
   getById: (id) => {
     console.log('[Projects] Fetching project:', id);
-    return api.get(`/projects/${id}`);
+    return api.get(`/api/projects/${id}`);
   },
 
   create: (data) => {
     console.log('[Projects] Creating project');
-    return api.post('/projects', data);
+    return api.post('/api/projects', data);
   },
 
   update: (id, data) => {
     console.log('[Projects] Updating project:', id);
-    return api.put(`/projects/${id}`, data);
+    return api.put(`/api/projects/${id}`, data);
   },
 
   delete: (id) => {
     console.log('[Projects] Deleting project:', id);
-    return api.delete(`/projects/${id}`);
+    return api.delete(`/api/projects/${id}`);
   },
 };
 
@@ -302,22 +302,22 @@ export const projectsApi = {
 export const tasksApi = {
   getByProject: (projectId) => {
     console.log('[Tasks] Fetching tasks for project:', projectId);
-    return api.get(`/projects/${projectId}/tasks`);
+    return api.get(`/api/tasks?projectId=${projectId}`);
   },
 
   create: (projectId, data) => {
     console.log('[Tasks] Creating task');
-    return api.post(`/projects/${projectId}/tasks`, data);
+    return api.post(`/api/tasks`, { ...data, projectId });
   },
 
   update: (projectId, taskId, data) => {
     console.log('[Tasks] Updating task:', taskId);
-    return api.put(`/projects/${projectId}/tasks/${taskId}`, data);
+    return api.put(`/api/tasks/${taskId}`, data);
   },
 
   delete: (projectId, taskId) => {
     console.log('[Tasks] Deleting task:', taskId);
-    return api.delete(`/projects/${projectId}/tasks/${taskId}`);
+    return api.delete(`/api/tasks/${taskId}`);
   },
 };
 
@@ -327,17 +327,17 @@ export const tasksApi = {
 export const analyticsApi = {
   getDashboard: () => {
     console.log('[Analytics] Fetching dashboard data');
-    return api.get('/analytics/dashboard');
+    return api.get('/api/analytics/dashboard');
   },
 
   getStats: () => {
     console.log('[Analytics] Fetching stats');
-    return api.get('/analytics/stats');
+    return api.get('/api/analytics/stats');
   },
 
   getRevenue: () => {
     console.log('[Analytics] Fetching revenue');
-    return api.get('/analytics/revenue');
+    return api.get('/api/analytics/revenue');
   },
 };
 
@@ -347,7 +347,7 @@ export const analyticsApi = {
 export const healthApi = {
   check: () => {
     console.log('[Health] Checking API health');
-    return api.get('/health');
+    return api.get('/api/health');
   },
 };
 
