@@ -238,32 +238,17 @@ api.interceptors.response.use(
   }
 );
 
-// ============ API ENDPOINTS ============
 
-/**
- * Authentication endpoints
- */
+
 export const authApi = {
-  login: (email, password) => {
-    console.log('[Auth] Login attempt:', email);
-    return api.post('/auth/login', { email, password });
-  },
-
-  signup: (email, password, name) => {
-    console.log('[Auth] Signup attempt:', email);
-    return api.post('/auth/register', { email, password, name });
-  },
-
-  getProfile: () => {
-    console.log('[Auth] Fetching profile');
-    return api.get('/auth/me');
-  },
-
-  updateProfile: (data) => {
-    console.log('[Auth] Updating profile');
-    return api.put('/auth/profile', data);
-  },
-
+  login: (email, password) =>
+    api.post('/api/auth/login', { email, password }),
+  signup: (email, password, name) =>
+    api.post('/api/auth/register', { email, password, name }),
+  getProfile: () =>
+    api.get('/api/auth/me'),
+  updateProfile: (data) =>
+    api.put('/api/auth/profile', data),
   logout: () => {
     console.log('[Auth] Logout');
     try {
@@ -273,6 +258,12 @@ export const authApi = {
       console.warn('Could not clear auth on logout:', e);
     }
   },
+};
+
+// ✅ ADD THIS RIGHT HERE
+export const usersApi = {
+  getProfile: () => authApi.getProfile(),
+  updateProfile: (data) => authApi.updateProfile(data),
 };
 
 /**
