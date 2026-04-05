@@ -13,19 +13,24 @@
     "prisma:seed": "node prisma/seed.js",
     "prisma:studio": "prisma studio"
   },
-  "keywords": ["freelance", "api", "express"],
+  "keywords": [
+    "freelance",
+    "api",
+    "express"
+  ],
   "author": "FreelanceFlow Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.0",
+    "@prisma/client": "^5.7.0",
+    "bcrypt": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.0",
-    "@prisma/client": "^5.7.0",
-    "jsonwebtoken": "^9.0.0",
-    "bcrypt": "^5.1.0"
+    "express": "^4.18.0",
+    "itty-router": "^5.0.23",
+    "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
-    "prisma": "^5.7.0",
-    "nodemon": "^3.0.0"
+    "nodemon": "^3.0.0",
+    "prisma": "^5.7.0"
   }
 }

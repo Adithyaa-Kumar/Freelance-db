@@ -1,66 +1,33 @@
 name = "freelanceflow-api"
-type = "javascript"
 account_id = "b75373d33ed51fe68bd4f29032140bb8"
-workers_dev = true
-compatibility_date = "2024-01-01"
 main = "backend/src/worker.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
 
 # Environment configuration
 [env.production]
 name = "freelanceflow-api-production"
 workers_dev = true
 
-[env.staging]
-name = "freelanceflow-api-staging"
-workers_dev = true
-
-[env.development]
-name = "freelanceflow-api-dev"
-workers_dev = true
-
-# Production environment variables
 [env.production.vars]
 ENVIRONMENT = "production"
 CORS_ORIGIN = "https://freelance-db.pages.dev"
 JWT_EXPIRE = "7d"
 
-# Staging environment variables
+[env.staging]
+name = "freelanceflow-api-staging"
+workers_dev = true
+
 [env.staging.vars]
 ENVIRONMENT = "staging"
 CORS_ORIGIN = "https://freelance-db.pages.dev"
 JWT_EXPIRE = "7d"
 
-# Development environment variables
+[env.development]
+name = "freelanceflow-api-dev"
+workers_dev = true
+
 [env.development.vars]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:5173"
 JWT_EXPIRE = "7d"
-DATABASE_ID = "YOUR_DEV_DB_ID"
-
-# KV Namespace for caching (optional)
-[[kv_namespaces]]
-binding = "CACHE"
-id = "YOUR_KV_NAMESPACE_ID"
-preview_id = "YOUR_KV_PREVIEW_ID"
-
-# Secrets - Set these in Cloudflare dashboard or via CLI:
-# wrangler secret put JWT_SECRET --env production
-# wrangler secret put DATABASE_URL --env production
-# wrangler secret put API_KEY --env production
-
-# Analytics
-[analytics]
-enabled = true
-
-# Limits
-limits = { cpu_ms = 50000 }
-
-# Build configuration
-[build]
-command = "cd backend && npm install"
-cwd = "./backend"
-watch_paths = ["src/**/*.js"]
-
-# Observability
-[observability]
-enabled = true
