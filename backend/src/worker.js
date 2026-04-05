@@ -154,19 +154,7 @@ router.options('*', (request, env) => {
   });
 });
 
-/**
- * Global 404 handler
- */
-router.all('*', (request, env) => {
-  return jsonResponse(
-    {
-      success: false,
-      message: `Route not found: ${request.method} ${new URL(request.url).pathname}`,
-    },
-    404,
-    env
-  );
-});
+
 
 // ============ ROUTES ============
 
@@ -196,8 +184,17 @@ router.get(
 router.post(
   '/api/auth/login',
   handleErrors(async (request, env) => {
-    const body = await request.json();
-    const { email, password } = body;
+    let body;
+
+    try {
+      body = await request.json();
+    } catch (e) {
+      const error = new Error('Invalid JSON body');
+      error.status = 400;
+      throw error;
+    }
+
+    const { email, password } = body || {};
 
     if (!email || !password) {
       const error = new Error('Email and password are required');
@@ -205,7 +202,6 @@ router.post(
       throw error;
     }
 
-    // Mock user (replace with DB query)
     const mockUser = {
       id: '1',
       email,
@@ -241,8 +237,17 @@ router.post(
 router.post(
   '/api/auth/register',
   handleErrors(async (request, env) => {
-    const body = await request.json();
-    const { email, password, name } = body;
+    let body;
+
+    try {
+      body = await request.json();
+    } catch (e) {
+      const error = new Error('Invalid JSON body');
+      error.status = 400;
+      throw error;
+    }
+
+    const { email, password, name } = body || {};
 
     if (!email || !password || !name) {
       const error = new Error('Email, password, and name are required');
@@ -250,7 +255,6 @@ router.post(
       throw error;
     }
 
-    // Mock user (replace with DB query)
     const mockUser = {
       id: '2',
       email,
@@ -395,7 +399,16 @@ router.get(
 );
 
 // ============ CLOUDFLARE WORKER HANDLER ============
-
+router.all('*', (request, env) => {
+  return jsonResponse(
+    {
+      success: false,
+      message: `Route not found: ${request.method} ${new URL(request.url).pathname}`,
+    },
+    404,
+    env
+  );
+});
 export default {
   /**
    * Main Fetch Handler

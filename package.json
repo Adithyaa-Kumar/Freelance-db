@@ -34,8 +34,5 @@
     "express"
   ],
   "author": "FreelanceFlow Team",
-  "license": "MIT",
-  "devDependencies": {
-    "wrangler": "^4.80.0"
-  }
+  "license": "MIT"
 }
