@@ -13,8 +13,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       - name: Checkout code
@@ -23,28 +21,28 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '20'
 
       - name: Install dependencies
         run: |
           npm install
           cd backend && npm install && cd ..
 
-      - name: Deploy to Cloudflare Workers (Production)
+      - name: Deploy to Cloudflare Workers
         run: npx wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify deployment
         run: |
           sleep 5
-          curl -s https://freelanceflow-api.adithyaa-kumar.workers.dev/api/health || echo "Health check in progress..."
+          curl -s https://freelanceflow-api-production.dbsproject.workers.dev || echo "Health check in progress..."
 
-      - name: Deployment notification
+      - name: Success message
         if: success()
-        run: echo "✅ Backend deployed successfully to Cloudflare Workers (Production)"
+        run: echo "✅ Backend deployed successfully"
 
-      - name: Deployment failure notification
+      - name: Failure message
         if: failure()
         run: echo "❌ Backend deployment failed"
