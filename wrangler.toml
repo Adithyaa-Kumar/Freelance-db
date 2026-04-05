@@ -1,8 +1,8 @@
 name = "freelanceflow-api"
 main = "backend/src/worker.js"
+account_id = "b75373d33ed51fe68bd4f29032140bb8"
 compatibility_date = "2024-01-01"
 workers_dev = true
-account_id = "b75373d33ed51fe68bd4f29032140bb8"
 
 # Production environment
 [env.production]
@@ -21,7 +21,7 @@ workers_dev = true
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
-CORS_ORIGIN = "https://freelance-db.pages.dev"
+CORS_ORIGIN = "https://freelance-db-staging.pages.dev"
 JWT_EXPIRE = "7d"
 
 # Development environment
@@ -33,3 +33,7 @@ workers_dev = true
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:5173"
 JWT_EXPIRE = "7d"
+
+# Secrets (set via: wrangler secret put NAME --env production)
+# - JWT_SECRET: Production JWT signing key
+# These are NOT set in this file for security reasons

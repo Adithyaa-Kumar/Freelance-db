@@ -1,229 +1,388 @@
 import axios from 'axios';
 
 /**
- * API Service with Production-Ready Configuration
- * Handles CORS, retries, error handling, and environment-specific URLs
+ * Production-Ready API Service
+ * - Fixed API base URL logic (always prioritize VITE_API_BASE_URL)
+ * - Improved error handling (network errors vs real errors)
+ * - Proper CORS error distinction
+ * - Console logging for debugging
  */
 
-// Get API URL from environment or use default
-const getApiUrl = () => {
+// ============ CONFIGURATION ============
+
+/**
+ * Get API base URL
+ * Priority: VITE_API_BASE_URL env var > default
+ * DO NOT fallback to window.location in production
+ */
+function getApiUrl() {
+  // Always use environment variable if set
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   
   if (envUrl) {
-    console.debug(`[API] Using API URL from environment: ${envUrl}`);
+    console.log('[API] Using VITE_API_BASE_URL:', envUrl);
     return envUrl;
   }
 
-  // Fallback based on current location
-  if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1';
-    
-    if (isLocalhost) {
-      return 'http://localhost:5000';
-    }
-    
-    // Production: assume API is on same domain
-    return `${window.location.protocol}//${window.location.host}`;
+  // Development only: use localhost
+  if (import.meta.env.VITE_ENVIRONMENT === 'development') {
+    const devUrl = 'http://localhost:5000';
+    console.warn('[API] Using development default:', devUrl);
+    return devUrl;
   }
 
-  return 'http://localhost:5000';
-};
+  // If no env URL in production, throw error
+  console.error('[API] ERROR: VITE_API_BASE_URL not set in production');
+  throw new Error('API_BASE_URL is required in production. Check your Cloudflare Pages environment variables.');
+}
 
 const API_BASE_URL = getApiUrl();
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
-console.log(`[API] Initialized with Base URL: ${API_BASE_URL}`);
+console.log('[API] Service initialized', {
+  baseURL: API_BASE_URL,
+  environment: import.meta.env.VITE_ENVIRONMENT,
+  mode: import.meta.env.MODE,
+});
+
+// ============ AXIOS INSTANCE ============
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
-  timeout: import.meta.env.VITE_REQUEST_TIMEOUT || 30000,
 });
+
+// ============ REQUEST INTERCEPTOR ============
 
 /**
- * Request Interceptor - Add auth token and handle request setup
+ * Add Authorization header and log requests
  */
-api.interceptors.request.use((config) => {
-  // Try to get token from localStorage first (from Zustand persist)
-  try {
-    const authStorage = localStorage.getItem('auth-storage');
-    let token = null;
-    
-    if (authStorage) {
-      try {
+api.interceptors.request.use(
+  (config) => {
+    const method = config.method?.toUpperCase() || 'UNKNOWN';
+    const url = config.url || 'unknown';
+
+    console.log(`[API Request] ${method} ${API_BASE_URL}${url}`);
+
+    // Add auth token if available
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
         const authState = JSON.parse(authStorage);
-        token = authState.state?.token || authState.token;
-      } catch (e) {
-        console.error('Failed to parse auth storage:', e);
+        const token = authState.state?.token || authState.token;
+
+        if (token) {
+          config.headers['Authorization'] = `Bearer ${token}`;
+          console.log('[API Request] Authorization header added');
+        }
       }
+    } catch (error) {
+      console.warn('[API Request] Could not read auth token:', error.message);
     }
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
-        console.debug(`[API Request] Auth header added`);
-      }
-    }
-  } catch (e) {
-    console.error('Error reading auth token:', e);
-  }
 
-  if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
-    console.debug(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
-  }
-
-  return config;
-});
-
-/**\n * Response Interceptor - Handle errors, retries, and logging
- */
-api.interceptors.response.use(
-  (response) => {
-    if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
-      console.debug(`[API Response] ${response.status} ${response.config.url}`);
-    }
-    
-    console.log('[API Response Interceptor] Full response:', response);
-    console.log('[API Response Interceptor] response.data:', response.data);
-    
-    // Unwrap the data if it's in the expected format
-    if (response.data?.data && response.data?.success !== false) {
-      console.log('[API Response Interceptor] Unwrapping nested data');
-      response.data = response.data.data;
-    }
-    
-    return response;
+    return config;
   },
-  async (error) => {
-    const config = error.config;
-    
-    config.retryCount = (config.retryCount || 0) + 1;
-
-    if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
-      console.error(`[API Error] ${error.message}`, {
-        status: error.response?.status,
-        url: config.url,
-        retryCount: config.retryCount,
-      });
-    }
-
-    if (error.response?.status === 401) {
-      // Clear auth state for 401 errors
-      try {
-        localStorage.removeItem('auth-storage');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-      } catch (e) {
-        // ignore
-      }
-      window.location.href = '/login';
-      return Promise.reject({
-        message: 'Session expired. Please login again.',
-        status: 401,
-      });
-    }
-
-    if (error.response?.status === 403) {
-      return Promise.reject({
-        message: 'Access denied',
-        status: 403,
-      });
-    }
-
-    if (error.message === 'Network Error' && !error.response) {
-      if (import.meta.env.VITE_ENVIRONMENT !== 'production') {
-        console.error('[API CORS Error] Check your CORS configuration');
-      }
-      return Promise.reject({
-        message: 'Network error. Please check your connection and CORS configuration.',
-        status: 0,
-      });
-    }
-
-    if (config.retryCount < MAX_RETRIES) {
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * config.retryCount));
-      return api.request(config);
-    }
-
+  (error) => {
+    console.error('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
 
+// ============ RESPONSE INTERCEPTOR ============
+
 /**
- * Authentication API
+ * Handle responses and errors with proper categorization
+ */
+api.interceptors.response.use(
+  (response) => {
+    console.log(`[API Response] ${response.status} ${response.config.url}`, {
+      dataKeys: Object.keys(response.data || {}),
+    });
+
+    // Unwrap nested data structure { success, data: {...} }
+    if (response.data?.success && response.data?.data) {
+      response.data = response.data.data;
+    }
+
+    return response;
+  },
+  async (error) => {
+    const config = error.config || {};
+    config.retryCount = (config.retryCount || 0) + 1;
+
+    const errorInfo = {
+      message: error.message,
+      status: error.response?.status || 0,
+      url: config.url,
+      retryCount: config.retryCount,
+      responseStatus: error.response?.statusText,
+    };
+
+    console.error('[API Response Error]', errorInfo);
+
+    // ========== ERROR CATEGORIZATION ==========
+
+    // 1. Network Error (no response from server)
+    if (!error.response && error.message === 'Network Error') {
+      console.error('[API NETWORK ERROR] Server unreachable or CORS blocked');
+      console.error('[API DEBUG] Check:', {
+        apiUrl: API_BASE_URL,
+        corsOrigin: 'Check Cloudflare Worker CORS_ORIGIN setting',
+        frontendUrl: typeof window !== 'undefined' ? window.location.href : 'N/A',
+      });
+
+      return Promise.reject({
+        type: 'NETWORK_ERROR',
+        message: `Cannot reach API server at ${API_BASE_URL}. Check CORS configuration.`,
+        originalError: error,
+      });
+    }
+
+    // 2. Request Timeout
+    if (error.code === 'ECONNABORTED') {
+      console.error('[API TIMEOUT] Request exceeded 30s timeout');
+
+      return Promise.reject({
+        type: 'TIMEOUT_ERROR',
+        message: 'Request timed out. Server may be slow or unreachable.',
+        originalError: error,
+      });
+    }
+
+    // 3. 401 Unauthorized - Session expired
+    if (error.response?.status === 401) {
+      console.warn('[API AUTH ERROR] Session expired (401)');
+
+      // Clear auth storage
+      try {
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('authToken');
+      } catch (e) {
+        console.warn('Could not clear auth storage:', e);
+      }
+
+      // Redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+
+      return Promise.reject({
+        type: 'AUTH_ERROR',
+        message: 'Session expired. Please log in again.',
+        status: 401,
+      });
+    }
+
+    // 4. 403 Forbidden - Access denied
+    if (error.response?.status === 403) {
+      console.error('[API PERMISSION ERROR] Access forbidden (403)');
+
+      return Promise.reject({
+        type: 'PERMISSION_ERROR',
+        message: 'You do not have permission to access this resource.',
+        status: 403,
+      });
+    }
+
+    // 5. 5xx Server Error
+    if (error.response?.status >= 500) {
+      console.error('[API SERVER ERROR]', error.response.status, error.response.data);
+
+      return Promise.reject({
+        type: 'SERVER_ERROR',
+        message: `Server error: ${error.response.status} ${error.response.statusText}`,
+        status: error.response.status,
+        responseData: error.response.data,
+      });
+    }
+
+    // 6. 4xx Client Error (except 401, 403)
+    if (error.response?.status >= 400) {
+      const errorMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        `Client error: ${error.response.status}`;
+
+      console.error('[API CLIENT ERROR]', error.response.status, errorMessage);
+
+      return Promise.reject({
+        type: 'CLIENT_ERROR',
+        message: errorMessage,
+        status: error.response.status,
+        responseData: error.response.data,
+      });
+    }
+
+    // ========== RETRY LOGIC ==========
+
+    if (config.retryCount < MAX_RETRIES && error.response?.status >= 500) {
+      console.log(`[API Retry] Attempt ${config.retryCount}/${MAX_RETRIES}`);
+      const delay = RETRY_DELAY * config.retryCount;
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return api.request(config);
+    }
+
+    // Return normalized error
+    return Promise.reject({
+      type: 'UNKNOWN_ERROR',
+      message: error.message || 'An unknown error occurred',
+      status: error.response?.status || 0,
+      originalError: error,
+    });
+  }
+);
+
+// ============ API ENDPOINTS ============
+
+/**
+ * Authentication endpoints
  */
 export const authApi = {
-  login: (email, password) =>
-    api.post('/api/auth/login', { email, password }),
-  signup: (email, password, name) =>
-    api.post('/api/auth/register', { email, password, name }),
-  getProfile: () =>
-    api.get('/api/auth/me'),
-  updateProfile: (data) =>
-    api.put('/api/auth/profile', data),
+  login: (email, password) => {
+    console.log('[Auth] Login attempt:', email);
+    return api.post('/auth/login', { email, password });
+  },
+
+  signup: (email, password, name) => {
+    console.log('[Auth] Signup attempt:', email);
+    return api.post('/auth/register', { email, password, name });
+  },
+
+  getProfile: () => {
+    console.log('[Auth] Fetching profile');
+    return api.get('/auth/me');
+  },
+
+  updateProfile: (data) => {
+    console.log('[Auth] Updating profile');
+    return api.put('/auth/profile', data);
+  },
+
+  logout: () => {
+    console.log('[Auth] Logout');
+    try {
+      localStorage.removeItem('auth-storage');
+      localStorage.removeItem('authToken');
+    } catch (e) {
+      console.warn('Could not clear auth on logout:', e);
+    }
+  },
 };
 
 /**
- * Projects API
+ * Projects endpoints
  */
 export const projectsApi = {
-  getAllProjects: () =>
-    api.get('/api/projects'),
-  getProjectById: (id) =>
-    api.get(`/api/projects/${id}`),
-  createProject: (data) =>
-    api.post('/api/projects', data),
-  updateProject: (id, data) =>
-    api.put(`/api/projects/${id}`, data),
-  deleteProject: (id) =>
-    api.delete(`/api/projects/${id}`),
+  getAll: () => {
+    console.log('[Projects] Fetching all projects');
+    return api.get('/projects');
+  },
+
+  getById: (id) => {
+    console.log('[Projects] Fetching project:', id);
+    return api.get(`/projects/${id}`);
+  },
+
+  create: (data) => {
+    console.log('[Projects] Creating project');
+    return api.post('/projects', data);
+  },
+
+  update: (id, data) => {
+    console.log('[Projects] Updating project:', id);
+    return api.put(`/projects/${id}`, data);
+  },
+
+  delete: (id) => {
+    console.log('[Projects] Deleting project:', id);
+    return api.delete(`/projects/${id}`);
+  },
 };
 
 /**
- * Tasks API
+ * Tasks endpoints
  */
 export const tasksApi = {
-  getTasksByProject: (projectId) =>
-    api.get(`/api/projects/${projectId}/tasks`),
-  createTask: (projectId, data) =>
-    api.post(`/api/projects/${projectId}/tasks`, data),
-  updateTask: (projectId, taskId, data) =>
-    api.put(`/api/projects/${projectId}/tasks/${taskId}`, data),
-  deleteTask: (projectId, taskId) =>
-    api.delete(`/api/projects/${projectId}/tasks/${taskId}`),
+  getByProject: (projectId) => {
+    console.log('[Tasks] Fetching tasks for project:', projectId);
+    return api.get(`/projects/${projectId}/tasks`);
+  },
+
+  create: (projectId, data) => {
+    console.log('[Tasks] Creating task');
+    return api.post(`/projects/${projectId}/tasks`, data);
+  },
+
+  update: (projectId, taskId, data) => {
+    console.log('[Tasks] Updating task:', taskId);
+    return api.put(`/projects/${projectId}/tasks/${taskId}`, data);
+  },
+
+  delete: (projectId, taskId) => {
+    console.log('[Tasks] Deleting task:', taskId);
+    return api.delete(`/projects/${projectId}/tasks/${taskId}`);
+  },
 };
 
 /**
- * Users API (use authApi for profile endpoints instead)
- */
-export const usersApi = {
-  getProfile: () => authApi.getProfile(),
-  updateProfile: (data) => authApi.updateProfile(data),
-};
-
-/**
- * Analytics API
+ * Analytics endpoints
  */
 export const analyticsApi = {
-  getStats: () =>
-    api.get('/api/analytics/stats'),
-  getRevenueData: () =>
-    api.get('/api/analytics/revenue'),
-  getProjectStats: () =>
-    api.get('/api/analytics/projects'),
+  getDashboard: () => {
+    console.log('[Analytics] Fetching dashboard data');
+    return api.get('/analytics/dashboard');
+  },
+
+  getStats: () => {
+    console.log('[Analytics] Fetching stats');
+    return api.get('/analytics/stats');
+  },
+
+  getRevenue: () => {
+    console.log('[Analytics] Fetching revenue');
+    return api.get('/analytics/revenue');
+  },
 };
 
 /**
  * Health check
  */
 export const healthApi = {
-  check: () =>
-    api.get('/api/health'),
+  check: () => {
+    console.log('[Health] Checking API health');
+    return api.get('/health');
+  },
+};
+
+/**
+ * Debug utilities
+ */
+export const debugApi = {
+  getConfig: () => ({
+    baseURL: API_BASE_URL,
+    environment: import.meta.env.VITE_ENVIRONMENT,
+    timeout: 30000,
+    apiVersion: '1.0.0',
+  }),
+
+  testConnection: async () => {
+    try {
+      console.log('[Debug] Testing connection to:', API_BASE_URL);
+      const response = await healthApi.check();
+      console.log('[Debug] Health check passed:', response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('[Debug] Health check failed:', error);
+      return { success: false, error };
+    }
+  },
 };
 
 export default api;
+
