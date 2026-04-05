@@ -4,24 +4,28 @@ account_id = "b75373d33ed51fe68bd4f29032140bb8"
 compatibility_date = "2024-01-01"
 workers_dev = true
 
-# Build configuration
+# -----------------------------
+# BUILD CONFIGURATION
+# -----------------------------
 [build]
 command = "npm run build"
 cwd = "./backend"
 
-# Production environment
+# -----------------------------
+# PRODUCTION ENVIRONMENT
+# -----------------------------
 [env.production]
 name = "freelanceflow-api-production"
 workers_dev = true
-route = "https://freelanceflow-api.adithyaa-kumar.workers.dev/*"
-zone_id = ""
 
 [env.production.vars]
 ENVIRONMENT = "production"
 CORS_ORIGIN = "https://freelanceflow.pages.dev"
 JWT_EXPIRE = "7d"
 
-# Staging environment
+# -----------------------------
+# STAGING ENVIRONMENT
+# -----------------------------
 [env.staging]
 name = "freelanceflow-api-staging"
 workers_dev = true
@@ -31,7 +35,9 @@ ENVIRONMENT = "staging"
 CORS_ORIGIN = "https://freelance-db-staging.pages.dev"
 JWT_EXPIRE = "7d"
 
-# Development environment
+# -----------------------------
+# DEVELOPMENT ENVIRONMENT
+# -----------------------------
 [env.development]
 name = "freelanceflow-api-dev"
 workers_dev = true
@@ -41,8 +47,19 @@ ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:5173"
 JWT_EXPIRE = "7d"
 
-# Secrets (set via: wrangler secret put NAME --env production)
-# Production secrets to set:
-# - wrangler secret put JWT_SECRET --env production
-# - wrangler secret put DATABASE_URL --env production
-# DO NOT commit secrets to this file for security reasons
+# -----------------------------
+# NOTES (DO NOT MODIFY BELOW)
+# -----------------------------
+# ❗ DO NOT add route or zone_id for workers.dev deployments
+# ❗ routes + zone_id are ONLY for custom domains
+# ❗ workers.dev URL is automatically handled by Cloudflare
+
+# -----------------------------
+# SECRETS (SET VIA CLI)
+# -----------------------------
+# Run these commands locally (NOT in this file):
+#
+# npx wrangler secret put JWT_SECRET --env production
+# npx wrangler secret put DATABASE_URL --env production
+#
+# Never store secrets inside wrangler.toml
