@@ -1,10 +1,10 @@
 name = "freelanceflow-api"
-account_id = "b75373d33ed51fe68bd4f29032140bb8"
 main = "backend/src/worker.js"
 compatibility_date = "2024-01-01"
 workers_dev = true
+account_id = "b75373d33ed51fe68bd4f29032140bb8"
 
-# Environment configuration
+# Production environment
 [env.production]
 name = "freelanceflow-api-production"
 workers_dev = true
@@ -14,6 +14,7 @@ ENVIRONMENT = "production"
 CORS_ORIGIN = "https://freelance-db.pages.dev"
 JWT_EXPIRE = "7d"
 
+# Staging environment
 [env.staging]
 name = "freelanceflow-api-staging"
 workers_dev = true
@@ -23,6 +24,7 @@ ENVIRONMENT = "staging"
 CORS_ORIGIN = "https://freelance-db.pages.dev"
 JWT_EXPIRE = "7d"
 
+# Development environment
 [env.development]
 name = "freelanceflow-api-dev"
 workers_dev = true
